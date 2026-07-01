@@ -1,0 +1,17 @@
+{
+  "device_id": "dron-01",
+  "generado_en": "2026-06-30T10:00:00",
+  "lecturas": [
+    {"captured_at": "2026-06-28 08:00:00", "municipio": "Pereira", "cod_muni": "66001", "lat": 4.8133, "lng": -75.6961, "pm25": 17.4, "pm10": 33.1, "no2": 20.5, "o3": 3.2, "ruido_db": 61.2, "bateria": 92},
+    {"captured_at": "2026-06-28 12:00:00", "municipio": "Pereira", "cod_muni": "66001", "lat": 4.8135, "lng": -75.6958, "pm25": 22.8, "pm10": 41.0, "no2": 27.3, "o3": 4.1, "ruido_db": 68.7, "bateria": 88},
+    {"captured_at": "2026-06-29 08:00:00", "municipio": "Pereira", "cod_muni": "66001", "lat": 4.8131, "lng": -75.6963, "pm25": 15.1, "pm10": 29.5, "no2": 18.9, "o3": 2.8, "ruido_db": 59.4, "bateria": 95},
+    {"captured_at": "2026-06-29 18:00:00", "municipio": "Pereira", "cod_muni": "66001", "lat": 4.8138, "lng": -75.6950, "pm25": 26.3, "pm10": 47.2, "no2": 31.0, "o3": 4.6, "ruido_db": 72.1, "bateria": 80},
+    {"captured_at": "2026-06-29 10:00:00", "municipio": "Dosquebradas", "cod_muni": "66170", "lat": 4.8350, "lng": -75.6740, "pm25": 19.8, "pm10": 36.4, "no2": 23.1, "o3": 3.5, "ruido_db": 64.0, "bateria": 90},
+    {"captured_at": "2026-06-30 09:00:00", "municipio": "Dosquebradas", "cod_muni": "66170", "lat": 4.8352, "lng": -75.6736, "pm25": 24.6, "pm10": 43.9, "no2": 28.7, "o3": 4.3, "ruido_db": 70.5, "bateria": 85}
+  ],
+  "eventos_seguridad": [
+    {"captured_at": "2026-06-29 18:05:00", "lat": 4.8138, "lng": -75.6950, "tipo_comportamiento": "merodeo", "confianza": 0.82, "media_url": "https://example.com/frames/ev1.jpg", "ai_result_json": {"modelo": "yolov8n", "clases": ["persona"], "movimiento": "sospechoso"}},
+    {"captured_at": "2026-06-29 18:12:00", "lat": 4.8140, "lng": -75.6946, "tipo_comportamiento": "forcejeo", "confianza": 0.74, "media_url": "https://example.com/frames/ev2.jpg", "ai_result_json": {"modelo": "yolov8n", "clases": ["persona", "persona"], "movimiento": "agresivo"}},
+    {"captured_at": "2026-06-30 09:20:00", "lat": 4.8352, "lng": -75.6736, "tipo_comportamiento": "aglomeracion", "confianza": 0.69, "media_url": "https://example.com/frames/ev3.jpg", "ai_result_json": {"modelo": "yolov8n", "clases": ["persona", "persona", "persona"], "movimiento": "concentracion"}}
+  ]
+}

@@ -1,0 +1,39 @@
+# Dependencias y paquetes
+vendor/
+node_modules/
+
+# Configuración con credenciales reales (usar config/config.example.php como base)
+# src/Config.php contiene solo defaults de desarrollo local; no eliminar si no hay secretos
+.env
+.env.*
+*.secret
+
+# Logs y temporales
+*.log
+*.tmp
+*.cache
+/tmp/
+
+# Base de datos local
+*.sql.bak
+*.dump
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code (internal)
+.claude/
+
+# Archivos de caché PHP
+*.php~
+
+# MariaDB / MySQL binarios locales (no deben ir al repo)
+/mariadb/

@@ -1,0 +1,139 @@
+:root {
+    --azul: #1f3a5f;
+    --azul2: #2e86de;
+    --bg: #f4f6f9;
+    --panel: #ffffff;
+    --borde: #e1e6ec;
+    --texto: #2c3e50;
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0; font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg); color: var(--texto);
+}
+.topbar {
+    display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+    background: var(--azul); color: #fff; padding: .8rem 1.2rem;
+}
+.brand { font-size: 1.2rem; font-weight: 700; }
+.temas { display: flex; gap: .5rem; flex-wrap: wrap; }
+.tema-btn {
+    background: rgba(255,255,255,.12); color: #fff; border: 0;
+    padding: .5rem .9rem; border-radius: 6px; cursor: pointer; font-size: .9rem;
+}
+.tema-btn:hover { background: rgba(255,255,255,.25); }
+.tema-btn.active { background: var(--azul2); font-weight: 600; }
+
+.container { max-width: 1150px; margin: 1.2rem auto; padding: 0 1rem; }
+
+.filtros {
+    display: flex; align-items: end; gap: 1rem; flex-wrap: wrap;
+    background: var(--panel); border: 1px solid var(--borde);
+    padding: .9rem 1rem; border-radius: 8px; margin-bottom: 1rem;
+}
+.filtros label { display: flex; flex-direction: column; font-size: .8rem; color: #666; gap: .25rem; }
+.filtros select, .filtros input {
+    padding: .45rem .5rem; border: 1px solid var(--borde); border-radius: 6px; font-size: .9rem; min-width: 160px;
+}
+.btn {
+    background: var(--azul2); color: #fff; border: 0; padding: .55rem 1.1rem;
+    border-radius: 6px; cursor: pointer; font-size: .9rem;
+}
+.btn:hover { background: #1f6fc0; }
+.estado { font-size: .82rem; color: #555; margin-left: auto; }
+
+.vistas { display: flex; gap: .4rem; margin-bottom: .8rem; }
+.vista-btn {
+    background: #fff; border: 1px solid var(--borde); padding: .55rem 1rem;
+    border-radius: 6px 6px 0 0; cursor: pointer; font-size: .9rem;
+}
+.vista-btn.active { border-bottom: 3px solid var(--azul2); font-weight: 600; color: var(--azul2); }
+
+.panel {
+    background: var(--panel); border: 1px solid var(--borde);
+    border-radius: 8px; padding: 1rem; min-height: 300px;
+}
+.nota {
+    background: #fff8e1; border: 1px solid #ffe08a; color: #7a5c00;
+    padding: .7rem .9rem; border-radius: 6px; margin-bottom: 1rem; font-size: .88rem;
+}
+.chart-wrap { position: relative; height: 340px; margin-bottom: 1rem; }
+.tabla { overflow: auto; max-height: 420px; border-top: 1px solid var(--borde); }
+.tabla table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.tabla th, .tabla td { border: 1px solid var(--borde); padding: .35rem .5rem; text-align: left; }
+.tabla thead th { position: sticky; top: 0; background: #f0f3f7; }
+.vacio { color: #888; font-size: .85rem; padding: .5rem; }
+
+.filtro-fuente select { min-width: 220px; font-weight: 500; }
+
+.pie { text-align: center; color: #7b8794; font-size: .8rem; padding: 1.2rem; }
+.pie a { color: var(--azul2); }
+
+/* Navegación por grupos desplegables */
+.dropdown { position: relative; display: inline-block; }
+.dropdown-toggle {
+    background: rgba(255,255,255,.12); color: #fff; border: 0;
+    padding: .5rem .9rem; border-radius: 6px; cursor: pointer; font-size: .9rem;
+}
+.dropdown-toggle:hover,
+.dropdown:hover .dropdown-toggle { background: rgba(255,255,255,.25); }
+.dropdown-toggle.active { background: var(--azul2); font-weight: 600; }
+.dropdown-content {
+    display: none; position: absolute; top: 100%; left: 0;
+    background: var(--azul); min-width: 200px;
+    border-radius: 0 0 6px 6px; z-index: 100; padding: .25rem 0;
+}
+.dropdown:hover .dropdown-content { display: block; }
+.dropdown-content .tema-btn {
+    display: block; width: 100%; text-align: left;
+    border-radius: 0; padding: .45rem .9rem;
+}
+
+/* ── Botón IA en topbar ── */
+.btn-llm-icon {
+    margin-left: auto; background: rgba(255,255,255,.15); color: #fff;
+    border: 1px solid rgba(255,255,255,.3); padding: .4rem .8rem;
+    border-radius: 6px; cursor: pointer; font-size: .85rem; white-space: nowrap;
+}
+.btn-llm-icon:hover { background: rgba(255,255,255,.28); }
+
+/* ── Toast de alertas ── */
+#toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: .5rem; }
+.toast { padding: .7rem 1rem; border-radius: 8px; font-size: .88rem; max-width: 360px; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+.toast-info    { background: #1f3a5f; color: #fff; }
+.toast-warning { background: #f39c12; color: #fff; }
+.toast-danger  { background: #c0392b; color: #fff; }
+
+/* ── Modal LLM ── */
+#llm-modal { position: fixed; inset: 0; z-index: 8000; display: flex; align-items: center; justify-content: center; }
+#llm-modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+.llm-modal-box {
+    position: relative; background: #fff; border-radius: 10px;
+    width: min(480px, 95vw); box-shadow: 0 8px 32px rgba(0,0,0,.25); z-index: 1;
+}
+.llm-modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: .9rem 1.2rem; border-bottom: 1px solid var(--borde); font-weight: 700;
+}
+.llm-modal-header button { background: none; border: 0; font-size: 1.1rem; cursor: pointer; color: #888; }
+.llm-modal-body { padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: .75rem; }
+.llm-label { display: flex; flex-direction: column; font-size: .8rem; color: #555; gap: .25rem; }
+.llm-label select, .llm-label input {
+    padding: .45rem .55rem; border: 1px solid var(--borde); border-radius: 6px; font-size: .9rem;
+}
+.llm-key-status { font-size: .78rem; color: #27ae60; font-weight: 500; }
+.llm-hint { font-size: .76rem; color: #888; margin: 0; }
+.llm-modal-footer {
+    display: flex; gap: .6rem; justify-content: flex-end;
+    padding: .85rem 1.2rem; border-top: 1px solid var(--borde);
+}
+.btn-primary { background: var(--azul); }
+.btn-primary:hover { background: #152b48; }
+
+/* ── Panel de interpretación IA ── */
+.llm-panel {
+    background: #f0f6ff; border: 1px solid #c3d9f5; border-radius: 8px;
+    padding: .85rem 1rem; margin-top: .9rem;
+}
+.llm-panel-header { font-size: .82rem; font-weight: 700; color: var(--azul); margin-bottom: .4rem; }
+.llm-panel .llm-texto { margin: 0; font-size: .88rem; line-height: 1.55; color: #2c3e50; }
