@@ -1,7 +1,9 @@
 :root {
-    --azul: #1f3a5f;
-    --azul2: #2e86de;
-    --bg: #f4f6f9;
+    --azul:  #1a2e5c;
+    --azul2: #2563ab;
+    --verde: #1db87f;
+    --verde2: #12a36a;
+    --bg:    #f4f6f9;
     --panel: #ffffff;
     --borde: #e1e6ec;
     --texto: #2c3e50;
@@ -14,15 +16,20 @@ body {
 .topbar {
     display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
     background: var(--azul); color: #fff; padding: .8rem 1.2rem;
+    border-bottom: 3px solid var(--verde);
 }
-.brand { font-size: 1.2rem; font-weight: 700; }
+.brand { display: flex; flex-direction: column; gap: .05rem; line-height: 1; }
+.brand-wordmark { font-size: 1.35rem; font-weight: 800; letter-spacing: -.5px; }
+.brand-vig { color: #fff; }
+.brand-ia  { color: var(--verde); }
+.brand-tagline { font-size: .62rem; color: rgba(255,255,255,.6); letter-spacing: .07em; text-transform: uppercase; }
 .temas { display: flex; gap: .5rem; flex-wrap: wrap; }
 .tema-btn {
     background: rgba(255,255,255,.12); color: #fff; border: 0;
     padding: .5rem .9rem; border-radius: 6px; cursor: pointer; font-size: .9rem;
 }
 .tema-btn:hover { background: rgba(255,255,255,.25); }
-.tema-btn.active { background: var(--azul2); font-weight: 600; }
+.tema-btn.active { background: var(--verde); font-weight: 600; }
 
 .container { max-width: 1150px; margin: 1.2rem auto; padding: 0 1rem; }
 
@@ -47,7 +54,7 @@ body {
     background: #fff; border: 1px solid var(--borde); padding: .55rem 1rem;
     border-radius: 6px 6px 0 0; cursor: pointer; font-size: .9rem;
 }
-.vista-btn.active { border-bottom: 3px solid var(--azul2); font-weight: 600; color: var(--azul2); }
+.vista-btn.active { border-bottom: 3px solid var(--verde); font-weight: 600; color: var(--verde2); }
 
 .panel {
     background: var(--panel); border: 1px solid var(--borde);
@@ -77,7 +84,7 @@ body {
 }
 .dropdown-toggle:hover,
 .dropdown:hover .dropdown-toggle { background: rgba(255,255,255,.25); }
-.dropdown-toggle.active { background: var(--azul2); font-weight: 600; }
+.dropdown-toggle.active { background: var(--verde); font-weight: 600; }
 .dropdown-content {
     display: none; position: absolute; top: 100%; left: 0;
     background: var(--azul); min-width: 200px;
@@ -132,8 +139,16 @@ body {
 
 /* ── Panel de interpretación IA ── */
 .llm-panel {
-    background: #f0f6ff; border: 1px solid #c3d9f5; border-radius: 8px;
+    background: #f0faf6; border: 1px solid rgba(29,184,127,.3); border-radius: 8px;
     padding: .85rem 1rem; margin-top: .9rem;
 }
-.llm-panel-header { font-size: .82rem; font-weight: 700; color: var(--azul); margin-bottom: .4rem; }
+.llm-panel-header { font-size: .82rem; font-weight: 700; color: var(--verde2); margin-bottom: .4rem; }
 .llm-panel .llm-texto { margin: 0; font-size: .88rem; line-height: 1.55; color: #2c3e50; }
+
+/* ── Footer con tags de tecnología ── */
+.pie-tags { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin-top: .4rem; }
+.pie-tag {
+    font-size: .68rem; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--verde2); border: 1px solid rgba(18,163,106,.35);
+    padding: .15rem .45rem; border-radius: 4px; font-weight: 600;
+}

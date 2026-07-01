@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Entorno · Aire · Ruido · Seguridad</title>
+    <title>VigIA — Vigilancia Ambiental y Seguridad con IA · Colombia</title>
     <link rel="stylesheet" href="assets/css/styles.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -20,7 +20,10 @@
 </head>
 <body>
 <header class="topbar">
-    <div class="brand">🛰️ Dashboard de Entorno</div>
+    <div class="brand">
+        <div class="brand-wordmark"><span class="brand-vig">Vig</span><span class="brand-ia">IA</span></div>
+        <div class="brand-tagline">Inteligencia artificial que vigila, protege y cuida tu entorno</div>
+    </div>
     <nav class="temas">
         <?php foreach (Config::GRUPOS as $grupo): ?>
         <div class="dropdown">
@@ -117,8 +120,14 @@
 </main>
 
 <footer class="pie">
-    Fuentes: <a href="https://www.datos.gov.co/" target="_blank" rel="noopener">datos.gov.co</a>
-    (Socrata SODA) + sensores del dron por API. Uso educativo/prototipo.
+    <div>Fuentes: <a href="https://www.datos.gov.co/" target="_blank" rel="noopener">datos.gov.co</a>
+    (Socrata SODA) + sensores del dron por API · Concurso Datos al Ecosistema 2026</div>
+    <div class="pie-tags">
+        <span class="pie-tag">Drones</span>
+        <span class="pie-tag">Inteligencia Artificial</span>
+        <span class="pie-tag">Datos Abiertos</span>
+        <span class="pie-tag">Bienestar y Salud</span>
+    </div>
 </footer>
 
 <script src="assets/js/app.js?v=<?= filemtime(__DIR__ . '/assets/js/app.js') ?>"></script>

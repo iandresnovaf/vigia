@@ -1,4 +1,4 @@
-# Metodología CRISP-ML — Dashboard de Entorno
+# Metodología CRISP-ML — VigIA
 
 **Concurso Datos al Ecosistema 2026: IA para Colombia**  
 Documento de metodología siguiendo el estándar **CRISP-ML(Q)** (Cross-Industry Standard Process for Machine Learning with Quality Assurance).
@@ -290,4 +290,4 @@ Internet → Nginx/Apache → PHP-FPM 8.2 → MySQL (replica R/O para lecturas)
 
 ---
 
-*Documento generado: 2026-07-01 · Concurso Datos al Ecosistema 2026: IA para Colombia*
+*Documento generado: 2026-07-01 · VigIA — Concurso Datos al Ecosistema 2026: IA para Colombia*

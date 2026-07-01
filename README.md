@@ -1,13 +1,15 @@
-# 🛰️ Dashboard de Entorno — IA para Colombia
+# VigIA — IA para Colombia 🇨🇴
+
+> *Inteligencia Artificial que VIGILA, PROTEGE y CUIDA tu entorno.*
 
 **Concurso Datos al Ecosistema 2026 · IA para Colombia**  
 Categorías: **Sostenibilidad y Medio Ambiente** · **Innovación Social (Seguridad Ciudadana)**
 
 ---
 
-## ¿Qué es este proyecto?
+## ¿Qué es VigIA?
 
-Dashboard web interactivo que integra **datos abiertos de datos.gov.co** con lecturas en tiempo real de un **dron de monitoreo ambiental** equipado con sensores de calidad del aire y ruido, e **inteligencia artificial** para interpretar los datos y emitir alertas tempranas a ciudadanos.
+Dashboard web interactivo que integra **datos abiertos de datos.gov.co** con lecturas en tiempo real de un **dron de monitoreo ambiental** equipado con sensores de calidad del aire y ruido, e **inteligencia artificial (Kimi / Moonshot AI)** para interpretar los datos y emitir alertas tempranas a ciudadanos colombianos.
 
 ### El problema que resuelve
 
@@ -157,8 +159,8 @@ Ver [`docs/crisp-ml.md`](docs/crisp-ml.md) para la documentación detallada.
 ### Instalación
 
 ```bash
-git clone https://github.com/iandresnovaf/dashboard-entorno.git
-cd dashboard-entorno
+git clone https://github.com/iandresnovaf/vigia.git
+cd vigia
 ```
 
 #### 1. Base de datos
@@ -221,7 +223,7 @@ Abrir `http://localhost:8000` en el navegador.
 ## Estructura del repositorio
 
 ```
-dashboard-entorno/
+vigia/
 ├── public/                    # Webroot (PHP built-in server / Apache)
 │   ├── index.php              # UI principal
 │   ├── api/                   # Endpoints REST internos
@@ -271,5 +273,6 @@ MIT License — libre uso, modificación y distribución con atribución.
 
 ## Equipo
 
-Desarrollado para el **Concurso Datos al Ecosistema 2026: IA para Colombia**  
-Organizado por el **Ministerio de TIC — datos.gov.co**
+**VigIA** — desarrollado para el **Concurso Datos al Ecosistema 2026: IA para Colombia**  
+Organizado por el **Ministerio de TIC — datos.gov.co**  
+🔖 `DRONES` · `INTELIGENCIA ARTIFICIAL` · `DATOS ABIERTOS` · `BIENESTAR Y SALUD`
