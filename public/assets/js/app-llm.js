@@ -7,7 +7,7 @@
     let llmCfg = { provider: 'kimi', model: 'moonshot-v1-8k', has_key: false };
 
     const PROVIDERS = {
-        kimi:   {
+        kimi: {
             label:  'Kimi / Moonshot AI',
             models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k', 'kimi-k2-0711', 'kimi-latest'],
         },
@@ -15,9 +15,29 @@
             label:  'OpenAI',
             models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo'],
         },
+        openrouter: {
+            label:  'OpenRouter (multi-modelo)',
+            models: [
+                'google/gemini-2.0-flash-exp:free',
+                'meta-llama/llama-3.3-70b-instruct:free',
+                'deepseek/deepseek-chat-v3-0324:free',
+                'anthropic/claude-3.5-sonnet',
+                'openai/gpt-4o-mini',
+            ],
+            showUrl: true,
+        },
+        gemini: {
+            label:  'Google Gemini',
+            models: ['gemini-2.0-flash', 'gemini-2.5-flash-preview-05-20', 'gemini-1.5-flash', 'gemini-1.5-pro'],
+        },
+        claude: {
+            label:  'Anthropic Claude',
+            models: ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-opus-4-8'],
+        },
         custom: {
             label:  'Personalizado (compatible OpenAI)',
             models: [],
+            showUrl: true,
         },
     };
 
@@ -46,7 +66,7 @@
             }
         }
         $('#llm-key-status').text(llmCfg.has_key ? '✓ Configurada (oculta)' : 'No configurada');
-        $('#llm-url-wrap').toggle(p === 'custom');
+        $('#llm-url-wrap').toggle(!!(PROVIDERS[p] || {}).showUrl);
         if (llmCfg.api_url) $('#llm-url').val(llmCfg.api_url);
     }
 
@@ -57,7 +77,7 @@
         p.models.forEach(function (m) { $sel.append($('<option>').val(m).text(m)); });
         $sel.append($('<option>').val('__custom__').text('Personalizado…'));
         $('#llm-model-custom-wrap').hide();
-        $('#llm-url-wrap').toggle(provider === 'custom');
+        $('#llm-url-wrap').toggle(!!p.showUrl);
     }
 
     /* ── Guardar configuración ── */

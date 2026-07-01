@@ -57,6 +57,9 @@
                 <select id="llm-provider">
                     <option value="kimi">Kimi / Moonshot AI</option>
                     <option value="openai">OpenAI</option>
+                    <option value="openrouter">OpenRouter (multi-modelo)</option>
+                    <option value="gemini">Google Gemini</option>
+                    <option value="claude">Anthropic Claude</option>
                     <option value="custom">Personalizado (OpenAI-compatible)</option>
                 </select>
             </label>
@@ -65,7 +68,7 @@
             </label>
             <div id="llm-model-custom-wrap" style="display:none">
                 <label class="llm-label">ID del modelo personalizado
-                    <input type="text" id="llm-model-custom" placeholder="ej: kimi-k2-0711, gpt-4o…">
+                    <input type="text" id="llm-model-custom" placeholder="ej: kimi-k2-0711, gpt-4o, gemini-2.0-flash…">
                 </label>
             </div>
             <label class="llm-label">API Key

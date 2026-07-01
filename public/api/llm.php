@@ -22,13 +22,16 @@ function llmConfig(PDO $pdo): array
 function apiUrl(string $provider, string $customUrl): string
 {
     return match ($provider) {
-        'openai' => 'https://api.openai.com/v1/chat/completions',
-        'custom' => $customUrl,
-        default  => 'https://api.moonshot.cn/v1/chat/completions', // kimi / moonshot
+        'openai'     => 'https://api.openai.com/v1/chat/completions',
+        'openrouter' => 'https://openrouter.ai/api/v1/chat/completions',
+        'gemini'     => 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+        'claude'     => '', // Anthropic usa callAnthropic(), esta URL no se usa
+        'custom'     => $customUrl,
+        default      => 'https://api.moonshot.cn/v1/chat/completions',
     };
 }
 
-function callLLM(string $url, string $apiKey, string $model, string $system, string $user): string
+function callLLM(string $url, string $apiKey, string $model, string $system, string $user, array $extraHeaders = []): string
 {
     $payload = json_encode([
         'model'       => $model,
@@ -40,14 +43,49 @@ function callLLM(string $url, string $apiKey, string $model, string $system, str
         'temperature' => 0.4,
     ], JSON_UNESCAPED_UNICODE);
 
+    $headers = array_merge(['Content-Type: application/json', 'Authorization: Bearer ' . $apiKey], $extraHeaders);
+
     $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_HTTPHEADER     => $headers,
+        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_SSL_VERIFYPEER => Config::CURL_SSL_VERIFY,
+    ]);
+    $body  = curl_exec($ch);
+    $errno = curl_errno($ch);
+    $err   = curl_error($ch);
+    curl_close($ch);
+
+    if ($errno) throw new RuntimeException('cURL error: ' . $err);
+    $json = json_decode($body, true);
+    if (!isset($json['choices'][0]['message']['content'])) {
+        $detail = $json['error']['message'] ?? substr((string) $body, 0, 200);
+        throw new RuntimeException('LLM error: ' . $detail);
+    }
+    return trim($json['choices'][0]['message']['content']);
+}
+
+function callAnthropic(string $apiKey, string $model, string $system, string $user): string
+{
+    $payload = json_encode([
+        'model'      => $model,
+        'max_tokens' => 450,
+        'system'     => $system,
+        'messages'   => [['role' => 'user', 'content' => $user]],
+    ], JSON_UNESCAPED_UNICODE);
+
+    $ch = curl_init('https://api.anthropic.com/v1/messages');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => $payload,
         CURLOPT_HTTPHEADER     => [
             'Content-Type: application/json',
-            'Authorization: Bearer ' . $apiKey,
+            'x-api-key: ' . $apiKey,
+            'anthropic-version: 2023-06-01',
         ],
         CURLOPT_TIMEOUT        => 30,
         CURLOPT_SSL_VERIFYPEER => Config::CURL_SSL_VERIFY,
@@ -57,15 +95,24 @@ function callLLM(string $url, string $apiKey, string $model, string $system, str
     $err   = curl_error($ch);
     curl_close($ch);
 
-    if ($errno) {
-        throw new RuntimeException('cURL error: ' . $err);
-    }
+    if ($errno) throw new RuntimeException('cURL error: ' . $err);
     $json = json_decode($body, true);
-    if (!isset($json['choices'][0]['message']['content'])) {
+    if (!isset($json['content'][0]['text'])) {
         $detail = $json['error']['message'] ?? substr((string) $body, 0, 200);
-        throw new RuntimeException('LLM error: ' . $detail);
+        throw new RuntimeException('Claude API error: ' . $detail);
     }
-    return trim($json['choices'][0]['message']['content']);
+    return trim($json['content'][0]['text']);
+}
+
+function dispatchLLM(array $cfg, string $url, string $system, string $user): string
+{
+    if ($cfg['provider'] === 'claude') {
+        return callAnthropic($cfg['api_key'], $cfg['model'], $system, $user);
+    }
+    $extra = $cfg['provider'] === 'openrouter'
+        ? ['HTTP-Referer: https://github.com/iandresnovaf/vigia', 'X-Title: VigIA']
+        : [];
+    return callLLM($url, $cfg['api_key'], $cfg['model'], $system, $user, $extra);
 }
 
 function temaCtx(string $tema): string
@@ -104,7 +151,7 @@ try {
                   "\n\nUmbrales: PM2.5 > 150 µg/m³ = posible incendio; PM10 > 200 µg/m³ = posible incendio; " .
                   "ruido_db > 85 dB = exceso de ruido; tipo_comportamiento sospechoso = alerta de seguridad." .
                   "\n\nResponde con este JSON exacto: {\"alerta\":true|false,\"tipo\":\"incendio|ruido|seguridad|ninguna\",\"mensaje\":\"descripción breve\"}";
-        $texto  = callLLM($url, $cfg['api_key'], $cfg['model'], $system, $user);
+        $texto  = dispatchLLM($cfg, $url, $system, $user);
         $parsed = json_decode($texto, true);
         echo json_encode([
             'ok'     => true,
@@ -115,7 +162,7 @@ try {
         $system = 'Eres un asistente amigable para ciudadanos colombianos. Analizas datos ambientales y de seguridad de Colombia y los explicas con claridad, sin tecnicismos. Responde siempre en español, máximo 3 oraciones, destacando tendencias o situaciones relevantes.';
         $user   = 'Analiza estos datos de ' . temaCtx($tema) . ' y explícalos a un ciudadano común: ' .
                   json_encode($datos, JSON_UNESCAPED_UNICODE);
-        $texto  = callLLM($url, $cfg['api_key'], $cfg['model'], $system, $user);
+        $texto  = dispatchLLM($cfg, $url, $system, $user);
         echo json_encode(['ok' => true, 'tipo' => 'interpretar', 'respuesta' => $texto], JSON_UNESCAPED_UNICODE);
     }
 } catch (Throwable $e) {
