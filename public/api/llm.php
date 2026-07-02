@@ -158,6 +158,42 @@ try {
             'tipo'   => 'alertar',
             'alerta' => $parsed ?? ['alerta' => false, 'tipo' => 'ninguna', 'mensaje' => $texto],
         ], JSON_UNESCAPED_UNICODE);
+    } elseif ($tipo === 'predecir') {
+        $municipio = substr(strip_tags((string)($body['municipio'] ?? '')), 0, 100);
+        $system = 'Eres el Agente Predictor de VigIA. Analiza la tendencia histórica de ' . temaCtx($tema) .
+                  ' en Colombia y predice los próximos 7 días. ' .
+                  'Responde ÚNICAMENTE con JSON válido, sin texto adicional: ' .
+                  '{"tendencia":"alza|baja|estable","prediccion_7dias":[v0,v1,v2,v3,v4,v5,v6],' .
+                  '"confianza":"alta|media|baja","narrativa":"texto en español de 2 oraciones"}';
+        $user   = "Municipio: $municipio\nDatos históricos recientes: " . json_encode($datos, JSON_UNESCAPED_UNICODE);
+        $texto  = dispatchLLM($cfg, $url, $system, $user);
+        $parsed = json_decode($texto, true);
+        echo json_encode([
+            'ok'               => true,
+            'tipo'             => 'predecir',
+            'tendencia'        => $parsed['tendencia']        ?? 'estable',
+            'prediccion_7dias' => array_map('floatval', $parsed['prediccion_7dias'] ?? []),
+            'confianza'        => $parsed['confianza']        ?? 'media',
+            'narrativa'        => $parsed['narrativa']        ?? $texto,
+        ], JSON_UNESCAPED_UNICODE);
+    } elseif ($tipo === 'recomendar') {
+        $municipio = substr(strip_tags((string)($body['municipio'] ?? '')), 0, 100);
+        $system = 'Eres el Agente Recomendador de VigIA. Genera 3 recomendaciones concretas y prácticas para ' .
+                  "ciudadanos de $municipio, Colombia, basadas en datos actuales de " . temaCtx($tema) . '. ' .
+                  'Considera grupos vulnerables (niños, adultos mayores) y el contexto colombiano. ' .
+                  'Responde ÚNICAMENTE con JSON válido: {"recomendaciones":["rec1","rec2","rec3"]}';
+        $user   = "Municipio: $municipio\nDatos actuales: " . json_encode($datos, JSON_UNESCAPED_UNICODE);
+        $texto  = dispatchLLM($cfg, $url, $system, $user);
+        $parsed = json_decode($texto, true);
+        $recos  = is_array($parsed['recomendaciones'] ?? null) ? $parsed['recomendaciones'] : [];
+        if (empty($recos)) {
+            $recos = array_values(array_filter(explode("\n", strip_tags($texto))));
+        }
+        echo json_encode([
+            'ok'              => true,
+            'tipo'            => 'recomendar',
+            'recomendaciones' => array_values(array_slice($recos, 0, 3)),
+        ], JSON_UNESCAPED_UNICODE);
     } else {
         $system = 'Eres un asistente amigable para ciudadanos colombianos. Analizas datos ambientales y de seguridad de Colombia y los explicas con claridad, sin tecnicismos. Responde siempre en español, máximo 3 oraciones, destacando tendencias o situaciones relevantes.';
         $user   = 'Analiza estos datos de ' . temaCtx($tema) . ' y explícalos a un ciudadano común: ' .

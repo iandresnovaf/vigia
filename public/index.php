@@ -145,6 +145,9 @@
         <div class="llm-panel-header">🤖 Interpretación IA</div>
         <p class="llm-texto"></p>
     </section>
+
+    <!-- Recomendaciones personalizadas por municipio -->
+    <section id="llm-recommendations" class="llm-reco-panel" style="display:none"></section>
 </main>
 
 <footer class="pie">
@@ -158,7 +161,22 @@
     </div>
 </footer>
 
+<!-- Chat flotante VigIA -->
+<button id="btn-chat" class="btn-chat-fab" title="Pregunta a VigIA">💬</button>
+<div id="chat-panel" style="display:none">
+    <div class="chat-header">
+        <span>💬 Pregunta a VigIA</span>
+        <button id="chat-close">✕</button>
+    </div>
+    <div id="chat-messages"></div>
+    <div class="chat-input-row">
+        <input id="chat-input" type="text" placeholder="¿Cómo está el aire en mi municipio?">
+        <button id="chat-send" class="btn">Enviar</button>
+    </div>
+</div>
+
 <script src="assets/js/app.js?v=<?= filemtime(__DIR__ . '/assets/js/app.js') ?>"></script>
 <script src="assets/js/app-llm.js?v=<?= filemtime(__DIR__ . '/assets/js/app-llm.js') ?>"></script>
+<script src="assets/js/app-chat.js?v=<?= filemtime(__DIR__ . '/assets/js/app-chat.js') ?>"></script>
 </body>
 </html>

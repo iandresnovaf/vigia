@@ -121,15 +121,52 @@
     /* ── Interpretar datos (llamado desde app.js) ── */
     window.interpretarDatos = function (rows, tema) {
         if (!llmCfg.has_key) return;
-        const $panel = $('#llm-interpretation');
+        const municipio = $('#municipio').val() || '';
+        const $panel    = $('#llm-interpretation');
         $panel.show().find('.llm-texto').html('<em>Analizando con IA…</em>');
+        $panel.find('.llm-pred').remove();
+
+        // Llamada 1: Interpretación principal
         $.ajax({
-            url: 'api/llm.php', method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ tipo: 'interpretar', tema: tema, datos: rows }),
+            url: 'api/llm.php', method: 'POST', contentType: 'application/json',
+            data: JSON.stringify({ tipo: 'interpretar', tema, datos: rows }),
         }).done(function (res) {
             $panel.find('.llm-texto').text(res.ok ? res.respuesta : '⚠️ ' + (res.error || 'Error'));
         }).fail(function () { $panel.hide(); });
+
+        // Llamada 2: Recomendaciones personalizadas
+        const $reco = $('#llm-recommendations').hide().empty();
+        $.ajax({
+            url: 'api/llm.php', method: 'POST', contentType: 'application/json',
+            data: JSON.stringify({ tipo: 'recomendar', tema, municipio, datos: rows.slice(0, 10) }),
+        }).done(function (res) {
+            if (!res.ok || !res.recomendaciones || !res.recomendaciones.length) return;
+            const lugar = municipio || 'tu municipio';
+            let html = '<h4>💡 Recomendaciones para ' + $('<span>').text(lugar).html() + '</h4><ul>';
+            res.recomendaciones.forEach(function (r) {
+                html += '<li>' + $('<span>').text(r).html() + '</li>';
+            });
+            $reco.html(html + '</ul>').show();
+        });
+
+        // Llamada 3: Predicción de tendencias (solo con historial suficiente)
+        if (rows.length >= 10) {
+            $.ajax({
+                url: 'api/llm.php', method: 'POST', contentType: 'application/json',
+                data: JSON.stringify({ tipo: 'predecir', tema, municipio, datos: rows.slice(0, 20) }),
+            }).done(function (res) {
+                if (!res.ok || !res.prediccion_7dias || !res.prediccion_7dias.length) return;
+                if (typeof window.mostrarPrediccion === 'function') {
+                    window.mostrarPrediccion(res.prediccion_7dias);
+                }
+                const iconos = { alta: '🟢', media: '🟡', baja: '🔴' };
+                const icono  = iconos[res.confianza] || '';
+                const tendencia = { alza: '📈 al alza', baja: '📉 a la baja', estable: '➡️ estable' }[res.tendencia] || res.tendencia;
+                const texto = icono + ' Tendencia ' + tendencia + (res.narrativa ? ' — ' + res.narrativa : '');
+                $panel.find('.llm-pred').remove();
+                $panel.append($('<p class="llm-pred">').text(texto));
+            });
+        }
     };
 
     /* ── Alertas en tiempo real del dron ── */

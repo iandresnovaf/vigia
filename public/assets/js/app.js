@@ -227,6 +227,34 @@
         else cargarComparar();
     }
 
+    /* ---------- predicción (línea punteada en chart) ---------- */
+    window.mostrarPrediccion = function (valores7dias) {
+        if (!chart || chart.config.type !== 'line') return;
+        const hoy    = new Date();
+        const labels = [];
+        for (let i = 1; i <= 7; i++) {
+            const d = new Date(hoy);
+            d.setDate(d.getDate() + i);
+            labels.push(d.toISOString().slice(5, 10));
+        }
+        const baseLen = chart.data.labels.length;
+        const pred    = new Array(baseLen).fill(null).concat(valores7dias.map(Number));
+        chart.data.datasets = chart.data.datasets.filter(function (ds) { return !ds._pred; });
+        chart.data.datasets.push({
+            label:           'Predicción (7d)',
+            data:            pred,
+            borderColor:     '#f39c12',
+            backgroundColor: 'transparent',
+            borderDash:      [5, 5],
+            borderWidth:     2,
+            pointRadius:     3,
+            spanGaps:        true,
+            _pred:           true,
+        });
+        chart.data.labels = chart.data.labels.concat(labels);
+        chart.update();
+    };
+
     /* ---------- init ---------- */
     $(function () {
         const $primerBtn = $('.tema-btn').first();
