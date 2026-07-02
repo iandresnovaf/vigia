@@ -15,6 +15,7 @@ Colombia cuenta con un robusto portal de datos abiertos (datos.gov.co) con cient
 - No existen alertas tempranas ciudadanas para incendios forestales basadas en datos locales de sensores
 - Los datos de seguridad del SIEDCO están disponibles pero son difíciles de consultar e interpretar
 - No hay una plataforma que unifique fuentes oficiales con lecturas de sensores IoT en tiempo real
+- El ciudadano no tiene a quién "preguntarle" sobre el estado ambiental de su municipio en lenguaje natural
 
 ### Objetivo del proyecto
 Desarrollar un dashboard web que:
@@ -22,11 +23,15 @@ Desarrollar un dashboard web que:
 2. Integre lecturas horarias de un dron IoT con sensores ambientales
 3. Use inteligencia artificial (LLM) para traducir los datos a lenguaje ciudadano
 4. Emita alertas automáticas cuando se detecten condiciones de riesgo
+5. Permita conversación natural con un asistente IA que consulta datos reales
+6. Prediga tendencias futuras y genere recomendaciones personalizadas
 
 ### Criterios de éxito
 - El dashboard carga datos reales de datos.gov.co sin intervención manual
 - Las alertas del dron se emiten en menos de 60 segundos tras una lectura anómala
 - Un ciudadano sin conocimiento técnico puede entender el estado del ambiente en su municipio
+- El chat responde correctamente a preguntas sobre dominios distintos (aire, seguridad, incendios, clima)
+- La predicción de 7 días se visualiza como línea punteada coherente con la tendencia histórica
 
 ---
 
@@ -50,26 +55,41 @@ Se evaluaron más de 30 datasets de datos.gov.co. A continuación el resultado d
 | Homicidios — SIEDCO | `m8fd-ahd9` | Long | ✅ Activo |
 | Lesiones Personales — SIEDCO | `jr6v-i33g` | Long | ✅ Activo |
 
-#### Datos del dron IoT (fuente propia)
+#### Datos del dron IoT / sensor externo (fuente propia)
 
-El dron captura cada hora y publica un JSON con la siguiente estructura:
+El dron o sensor externo publica por API un JSON con estructura:
 
 ```json
 {
-  "device_id": "dron-01",
-  "captured_at": "2026-07-01T10:00:00",
+  "ok": true,
+  "rows": [
+    {
+      "municipio": "Pereira",
+      "estacion": "DRON-01",
+      "fecha_formateada": "2026-07-01 10:00",
+      "diametro_aerodinamico": "PM2.5",
+      "medicion": 18.4
+    }
+  ],
+  "server_time": "2026-07-01T10:05:00"
+}
+```
+
+La función `transformarFilasSensor()` en `dron.php` pivota las filas por tipo de medición a formato columnar:
+
+```json
+{
+  "captured_at": "2026-07-01 10:00",
   "municipio": "Pereira",
-  "cod_muni": "66001",
-  "lat": 4.8133,
-  "lng": -75.6961,
+  "estacion": "DRON-01",
   "pm25": 18.4,
   "pm10": 32.1,
   "no2": 12.5,
-  "o3": 41.0,
-  "ruido_db": 62.3,
-  "bateria": 85
+  "ruido_db": 62.3
 }
 ```
+
+La URL del sensor se configura desde la interfaz (⚙️ IA → Sensores & Datos) y se persiste en la tabla `llm_config`.
 
 ### Exploración y calidad de datos
 
@@ -83,10 +103,10 @@ El dron captura cada hora y publica un JSON con la siguiente estructura:
 - Cobertura: nacional, desde 2003
 - Sin valores nulos críticos en campos clave
 
-**Datos del dron:**
+**Datos del sensor/dron:**
 - Frecuencia: 1 lectura/hora
-- Almacenamiento: MySQL con `UNIQUE KEY (device_id, captured_at)` para idempotencia
-- Durante desarrollo: `cron/sample_dron.json` con datos de Pereira y Dosquebradas (Risaralda)
+- Almacenamiento MySQL con `UNIQUE KEY (device_id, captured_at)` para idempotencia
+- Durante desarrollo: `cron/sample_dron.json` con datos de Pereira y Dosquebradas
 
 ---
 
@@ -116,13 +136,13 @@ Se implementó la función `normalizar()` en `public/api/datos_abiertos.php` que
 4. Salida estandarizada: `{fecha, municipio, estacion, categoria, medicion}`
 
 ```php
-// Ejemplo de mapeo en Config.php (fuente IDEAM, formato long)
+// Ejemplo de mapeo (fuente IDEAM, formato long)
 'campo_fecha'     => 'med_fecha_inicio',
 'campo_valor'     => 'med_concentracion_estandar',
 'campo_municipio' => 'municipio',
 'campo_categoria' => 'msfl_code',
 
-// Ejemplo de mapeo en Config.php (SVCA, formato wide)
+// Ejemplo de mapeo (SVCA, formato wide)
 'formato'      => 'wide',
 'valores_wide' => ['pm10' => 'PM10', 'pm25' => 'PM2.5'],
 ```
@@ -146,17 +166,45 @@ API Socrata → SocrataClient.php → normalizar() → datos_abiertos.php → ap
 
 ## Fase 4 — Modelado
 
-### Componente de IA: Interpretación con LLM
+### Sistema multi-agente (Nivel Avanzado)
 
-**Modelo usado**: Kimi / Moonshot AI (API OpenAI-compatible)  
-**Endpoint**: `https://api.moonshot.cn/v1/chat/completions`  
-**Modelos disponibles**: `moonshot-v1-8k`, `moonshot-v1-32k`, `kimi-k2-0711`, `kimi-latest`
+La arquitectura de IA central es un pipeline de **2 llamadas LLM en cadena** implementado en `public/api/chat.php`:
 
-**Casos de uso implementados:**
+```
+Usuario → /api/chat.php
+              │
+              ▼ Llamada 1: Agente Clasificador (max_tokens=100)
+         { dominio, necesita_datos, parametro }
+              │
+              ▼ Fetch automático SocrataClient (20 registros)
+              │
+              ▼ Llamada 2: Agente Especialista (max_tokens=500)
+    ┌─────────────────────────────────────────────────────┐
+    │  dominio=aire/incendios/clima  → Agente Ambiental   │
+    │  dominio=seguridad             → Agente Seguridad   │
+    │  dominio=prediccion            → Agente Predictor   │
+    │  dominio=simulacion            → Agente Simulador   │
+    │  dominio=general               → Agente VigIA       │
+    └─────────────────────────────────────────────────────┘
+              │
+              ▼ { respuesta, agente, datos_usados, dominio }
+```
 
-#### 1. Interpretación de datos abiertos (NLG)
-Cuando el usuario carga un tema, se envían las primeras 20 filas al LLM con este prompt:
+**Prompt del Agente Clasificador:**
+```
+Eres el Agente Clasificador de VigIA (monitoreo ambiental y seguridad, Colombia).
+Clasifica la intención del mensaje ciudadano. Responde SOLO con JSON válido:
+{"dominio":"aire|seguridad|incendios|clima|prediccion|simulacion|general",
+ "necesita_datos":true|false,"parametro":"pm25|pm10|hurtos|temperatura|..."}
+```
 
+**Contexto de historial**: las últimas 4 interacciones se incluyen como texto para mantener continuidad conversacional.
+
+### Componentes LLM en api/llm.php
+
+El endpoint `/api/llm.php` soporta 4 tipos de llamada:
+
+#### tipo=interpretar — NLG ciudadano
 ```
 Sistema: Eres un asistente amigable para ciudadanos colombianos. Analizas datos
 ambientales y de seguridad y los explicas sin tecnicismos. Máximo 3 oraciones.
@@ -164,41 +212,57 @@ ambientales y de seguridad y los explicas sin tecnicismos. Máximo 3 oraciones.
 Usuario: Analiza estos datos de [tema] y explícalos a un ciudadano común: [datos JSON]
 ```
 
-**Salida esperada**:  
-*"En Pereira, los niveles de PM2.5 durante las últimas semanas se mantienen en rangos moderados entre 15 y 30 µg/m³, por debajo del límite de 35 µg/m³ recomendado por la OMS. Sin embargo, hay un incremento leve los días entre semana que podría estar relacionado con el tráfico vehicular. Se recomienda precaución para personas con problemas respiratorios."*
-
-#### 2. Sistema de alertas en tiempo real (anomaly detection)
-Cada 60 segundos se envía la última lectura del dron al LLM con umbrales de referencia:
-
+#### tipo=alertar — Detección de anomalías en tiempo real
 ```
 Umbrales: PM2.5 > 150 µg/m³ = posible incendio;
           PM10 > 200 µg/m³ = posible incendio;
           ruido_db > 85 dB = exceso de ruido (límite OMS);
           tipo_comportamiento sospechoso = alerta de seguridad
 
-Respuesta esperada (JSON): {"alerta": true, "tipo": "incendio", "mensaje": "..."}
+Respuesta esperada: {"alerta":true|false,"tipo":"incendio|ruido|seguridad|ninguna","mensaje":"..."}
 ```
+Polling cada 60 segundos desde `app-llm.js`. Toast UI con 🔥 🔊 🚨 según el tipo.
 
-**Flujo completo de alertas:**
+#### tipo=predecir — Analítica predictiva (7 días)
 ```
-dron → fetch_dron.php → MySQL → /api/dron.php → app-llm.js
-                                                     |
-                                            /api/llm.php?tipo=alertar
-                                                     |
-                                              Kimi API
-                                                     |
-                                         Toast 🔥🔊🚨 en UI
+Sistema: Eres el Agente Predictor de VigIA. Analiza la tendencia histórica y predice
+los próximos 7 días con nivel de confianza. Responde SOLO JSON:
+{"tendencia":"alza|baja|estable",
+ "prediccion_7dias":[v0,v1,v2,v3,v4,v5,v6],
+ "confianza":"alta|media|baja",
+ "narrativa":"texto en español de 2 oraciones"}
 ```
+Los 7 valores se inyectan en el chart.js existente como dataset adicional con `borderDash:[5,5]` (línea punteada naranja). Se activa automáticamente si el municipio tiene ≥ 10 registros.
 
-### Configuración del LLM (persiste en DB)
+#### tipo=recomendar — Recomendaciones personalizadas
+```
+Sistema: Eres el Agente Recomendador de VigIA. Genera 3 recomendaciones concretas
+para ciudadanos de [municipio], Colombia, basadas en datos actuales de [tema].
+Considera grupos vulnerables (niños, adultos mayores) y contexto colombiano.
+Responde SOLO JSON: {"recomendaciones":["rec1","rec2","rec3"]}
+```
+Se muestran en el panel `#llm-recommendations` bajo la interpretación IA, identificado con el nombre del municipio.
 
-El usuario configura el proveedor LLM una sola vez desde la interfaz (⚙️ IA). La API key se almacena en la tabla `llm_config` de MySQL — **nunca en archivos del repositorio**.
+### Multi-proveedor LLM
 
-| Proveedor | URL base | Modelos soportados |
-|-----------|----------|--------------------|
-| Kimi / Moonshot AI | `https://api.moonshot.cn/v1` | `moonshot-v1-8k`, `kimi-k2-0711`, `kimi-latest` |
-| OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini`, `gpt-4o` |
-| Personalizado | URL configurable | Cualquier modelo OpenAI-compatible |
+Todos los agentes y tipos de llamada son multi-proveedor. La función `dispatchLLM()` enruta al handler correcto:
+
+| Proveedor | Handler | Formato de request |
+|-----------|---------|-------------------|
+| Kimi / Moonshot AI | `callLLM()` | OpenAI-compatible |
+| OpenAI | `callLLM()` | OpenAI-compatible |
+| OpenRouter | `callLLM()` + headers extra | OpenAI-compatible + `HTTP-Referer`, `X-Title` |
+| Google Gemini | `callLLM()` | OpenAI-compatible via `/v1beta/openai/` |
+| Anthropic Claude | `callAnthropic()` | `/v1/messages`, `x-api-key`, formato propio |
+| Personalizado | `callLLM()` | OpenAI-compatible, URL configurable |
+
+La API key se persiste en `llm_config` (MySQL). **Nunca se almacena en archivos del repositorio.**
+
+### Configuración dinámica de sensores
+
+El `SocrataClient` usa un `static $overrideToken` que `datos_abiertos.php` establece desde DB antes de cada consulta, permitiendo que cada instalación use su propio Socrata App Token sin modificar código.
+
+La URL del sensor externo se lee de `llm_config` en cada request de `dron.php`, permitiendo cambiarla sin reiniciar el servidor.
 
 ---
 
@@ -209,7 +273,6 @@ El usuario configura el proveedor LLM una sola vez desde la interfaz (⚙️ IA)
 Todos los endpoints fueron verificados el **2026-07-01**:
 
 ```bash
-# Verificación realizada
 curl "https://www.datos.gov.co/resource/53gx-j5pc.json?$limit=1"  # ✅ 200 OK
 curl "https://www.datos.gov.co/resource/g4t8-zkc3.json?$limit=1"  # ✅ 200 OK
 curl "https://www.datos.gov.co/resource/ryr5-rs2a.json?$limit=1"  # ✅ 200 OK
@@ -224,9 +287,25 @@ Probado con datos sintéticos de umbral crítico:
 - ruido_db = 92 dB → LLM responde `{"alerta": true, "tipo": "ruido", ...}` ✅
 - PM2.5 = 25 µg/m³ → LLM responde `{"alerta": false, "tipo": "ninguna"}` ✅
 
-### Interpretación de datos
+### Chat multi-agente
 
-Evaluación cualitativa: las respuestas del LLM para 5 municipios diferentes fueron claras, en español correcto y sin tecnicismos en el 100% de las pruebas.
+Evaluado con 5 dominios distintos (Kimi K2 como proveedor de prueba):
+
+| Pregunta de prueba | Agente esperado | Resultado |
+|--------------------|----------------|-----------|
+| "¿Cómo está el aire en Pereira?" | Ambiental | ✅ Clasificó `dominio=aire`, consultó dataset 53gx-j5pc |
+| "¿Cuántos hurtos hubo en Bogotá el año pasado?" | Seguridad | ✅ Clasificó `dominio=seguridad`, consultó 4rxi-8m8d |
+| "Predíceme el PM2.5 para la próxima semana" | Predictor | ✅ Clasificó `dominio=prediccion` |
+| "¿Qué pasaría si queman más caña?" | Simulador | ✅ Clasificó `dominio=simulacion` |
+| "¿Qué es VigIA?" | VigIA | ✅ Clasificó `dominio=general`, `necesita_datos=false` |
+
+### Predicción de tendencias
+
+El Agente Predictor devuelve un JSON estructurado. Validación:
+- Respuesta contiene exactamente 7 valores numéricos en `prediccion_7dias` ✅
+- `tendencia` es uno de `alza|baja|estable` ✅
+- `narrativa` en español, coherente con la tendencia ✅
+- Línea punteada aparece en el chart al recibir la respuesta ✅
 
 ### Datasets descartados (y razón)
 
@@ -256,23 +335,30 @@ php -S localhost:8000 -t public
 
 El script `scripts/iniciar.ps1` automatiza los tres pasos en Windows.
 
-### Arquitectura de despliegue productivo (escalabilidad)
+### Configuración inicial (primera vez)
 
-Para escalar a producción:
+1. Abrir `http://localhost:8000`
+2. Hacer clic en **⚙️ IA**
+3. Tab **🤖 Asistente IA**: seleccionar proveedor y modelo, ingresar API key → Guardar
+4. Tab **🛰️ Sensores & Datos**: (opcional) ingresar URL del dron/sensor y Socrata App Token → Guardar
+5. El sistema queda listo: interpretación, recomendaciones, predicción y chat activos
+
+### Arquitectura de despliegue productivo (escalabilidad)
 
 ```
 Internet → Nginx/Apache → PHP-FPM 8.2 → MySQL (replica R/O para lecturas)
                               ↕
                      Cron horario (fetch_dron.php)
                               ↕
-                    Drones IoT (múltiples dispositivos)
+               Sensores IoT / drones (múltiples, URL configurable)
                               ↕
-                    LLM API (Kimi / OpenAI) — llamadas bajo demanda
+                    LLM API (cualquier proveedor) — llamadas bajo demanda
 ```
 
-- **Multi-dron**: `device_id` diferente por dron; `Config::DRON_DEVICE_ID` configurable
-- **Multi-municipio**: cada dron reporta `cod_muni`; la UI filtra por municipio
-- **Cache de datos abiertos**: tabla `datos_abiertos_cache` disponible para reducir llamadas a Socrata en horario pico
+- **Multi-dron**: `device_id` diferente por dron; sensor URL configurable desde UI
+- **Multi-municipio**: cada dron reporta `municipio`; la UI filtra automáticamente
+- **Multi-proveedor LLM**: el administrador cambia el proveedor desde la UI sin tocar código
+- **Cache de datos abiertos**: tabla `datos_abiertos_cache` disponible para reducir llamadas a Socrata
 - **Fase 2 — Visión por computador**: `ai-service/app.py` (FastAPI + YOLO/MediaPipe) recibe frames del dron y clasifica comportamientos; PHP orquesta via `AiClient.php`
 
 ---
@@ -281,13 +367,16 @@ Internet → Nginx/Apache → PHP-FPM 8.2 → MySQL (replica R/O para lecturas)
 
 | Decisión | Alternativa descartada | Razón |
 |----------|----------------------|-------|
-| PHP 8.2 como backend | Python/Django | Stack solicitado por el proyecto; PHP es dominante en hosting colombiano |
+| PHP 8.2 como backend | Python/Django | Stack solicitado; PHP es dominante en hosting colombiano |
 | Socrata SODA API | Descarga CSV | API permite filtros en tiempo real sin almacenamiento local |
-| LLM externo (Kimi) | ML propio (sklearn) | Menor tiempo de desarrollo; calidad de interpretación NLG muy superior |
+| Multi-proveedor LLM (6 opciones) | Solo Kimi | Flexibilidad para equipos con distintos presupuestos y proveedores |
+| Pipeline 2-llamadas (Clasificador → Especialista) | Prompt único con instrucciones condicionales | Separación de responsabilidades; mejor calidad de clasificación; prompts más cortos y precisos por agente |
+| JSON estructurado en predecir/recomendar | Texto libre | Parseable programáticamente; integración directa con Chart.js y DOM |
+| Polling 60s para alertas | WebSockets | Simplicidad; el dron publica cada hora (no requiere tiempo real estricto) |
+| Socrata token via DB (override estático) | Modificar Config.php | Permite cambio en caliente desde UI sin reiniciar el servidor |
 | MySQL + PDO | SQLite | Soporte multi-dron y consultas concurrentes |
 | Formato long normalizado | Raw por fuente | Uniformidad en el frontend independiente de la fuente |
-| Alertas vía polling 60s | WebSockets | Simplicidad; el dron publica cada hora (no requiere tiempo real estricto) |
 
 ---
 
-*Documento generado: 2026-07-01 · VigIA — Concurso Datos al Ecosistema 2026: IA para Colombia*
+*Documento actualizado: 2026-07-02 · VigIA — Concurso Datos al Ecosistema 2026: IA para Colombia*

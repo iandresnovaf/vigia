@@ -9,7 +9,7 @@ Categorías: **Sostenibilidad y Medio Ambiente** · **Innovación Social (Seguri
 
 ## ¿Qué es VigIA?
 
-Dashboard web interactivo que integra **datos abiertos de datos.gov.co** con lecturas en tiempo real de un **dron de monitoreo ambiental** equipado con sensores de calidad del aire y ruido, e **inteligencia artificial (Kimi / Moonshot AI)** para interpretar los datos y emitir alertas tempranas a ciudadanos colombianos.
+Dashboard web interactivo que integra **datos abiertos de datos.gov.co** con lecturas en tiempo real de un **dron de monitoreo ambiental** y un **sistema multi-agente de IA** para interpretar datos, predecir tendencias, emitir alertas y responder preguntas en lenguaje natural a ciudadanos colombianos.
 
 ### El problema que resuelve
 
@@ -20,8 +20,26 @@ Los ciudadanos colombianos no tienen acceso fácil a información ambiental y de
 Un único punto de acceso que:
 - Consolida **9 fuentes de datos abiertos** de calidad del aire, incendios, clima y seguridad
 - Integra lecturas horarias de un **dron IoT** con sensores PM2.5, PM10, NO₂, O₃ y ruido
-- Usa un **LLM (Kimi / Moonshot AI)** para traducir los datos a lenguaje ciudadano
+- Despliega un **sistema multi-agente** con 5 agentes especializados (Ambiental, Seguridad, Predictor, Simulador, VigIA)
+- Permite **chat conversacional** en lenguaje natural: el ciudadano pregunta y los agentes responden con datos reales
+- **Predice tendencias** a 7 días con línea punteada en el gráfico y análisis de confianza
+- Genera **recomendaciones personalizadas** por municipio y tema
 - Emite **alertas automáticas en tiempo real**: 🔥 incendio, 🔊 ruido excesivo, 🚨 seguridad
+
+---
+
+## Nivel de participación
+
+| Criterio del concurso | Implementación en VigIA |
+|----------------------|------------------------|
+| IA generativa / chat conversacional | Chat 💬 con historial, enruta a 5 agentes especializados |
+| Sistema multi-agente | Agente Clasificador → Especialista (2 llamadas LLM en cadena) |
+| Analítica predictiva avanzada | `tipo=predecir` → 7 valores JSON + línea punteada en Chart.js |
+| Detección de anomalías | Agente Clasificador detecta contexto de riesgo; umbrales en alertas |
+| Modelos de simulación | Agente Simulador responde "¿qué pasaría si…?" |
+| Recomendaciones personalizadas | `tipo=recomendar` → 3 items por municipio y tema |
+| Integración de datos abiertos + IoT | 9 datasets Socrata + dron externo por URL configurable |
+| Arquitectura escalable | N fuentes = N entradas en Config.php; multi-dron por `device_id` |
 
 ---
 
@@ -29,7 +47,7 @@ Un único punto de acceso que:
 
 | # | Reto | Nivel |
 |---|------|-------|
-| 2 | Seguridad Ciudadana y Justicia | Intermedio |
+| 2 | Seguridad Ciudadana y Justicia | Avanzado |
 | 6 | Desarrollo Sostenible y Medio Ambiente | Avanzado |
 
 ---
@@ -72,52 +90,69 @@ Todos los conjuntos de datos son consultados en tiempo real via **API Socrata SO
 ## Arquitectura del sistema
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    FUENTES DE DATOS                             │
-│                                                                 │
-│  datos.gov.co (API Socrata SODA)      Dron IoT (JSON horario)  │
-│  9 datasets abiertos                  PM2.5, PM10, NO2, O3,    │
-│  aire / incendios / clima /           ruido_dB, batería, GPS   │
-│  seguridad                                                      │
-└──────────────────┬───────────────────────────┬─────────────────┘
-                   │                           │
-                   ▼                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    BACKEND PHP 8.2                              │
-│                                                                 │
-│  SocrataClient.php  ─ consulta APIs con filtros SoQL            │
-│  DronRepository.php ─ upsert y lectura de MySQL                 │
-│  Config.php         ─ mapeo de datasets y campos               │
-│  AiClient.php       ─ (fase 2) orquesta microservicio CV       │
-│                                                                 │
-│  APIs REST internas:                                            │
-│  /api/datos_abiertos.php  /api/dron.php                        │
-│  /api/comparar.php        /api/llm.php  /api/config.php        │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              MYSQL / MARIADB 11.4                               │
-│  dron_lecturas · dron_eventos_seguridad · llm_config            │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   FRONTEND (PHP + jQuery + Chart.js)            │
-│                                                                 │
-│  Menú desplegable:  🌿 Ambiente  ·  🛡️ Seguridad               │
-│  5 temas: Aire · Ruido · Incendios · Clima · Seguridad          │
-│  3 vistas por tema: Datos Abiertos · Dron · Comparación         │
-│                                                                 │
-│  ┌────────────────────────────────────────────────────┐        │
-│  │  🤖 Asistente IA — Kimi / Moonshot AI              │        │
-│  │  • Interpretación automática en lenguaje ciudadano  │        │
-│  │  • Alertas en tiempo real (polling 60 s):           │        │
-│  │    🔥 PM2.5 > 150 → posible incendio                │        │
-│  │    🔊 ruido_dB > 85 → exceso de ruido (OMS)         │        │
-│  │    🚨 comportamiento sospechoso → seguridad          │        │
-│  └────────────────────────────────────────────────────┘        │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                        FUENTES DE DATOS                              │
+│                                                                      │
+│  datos.gov.co (API Socrata SODA)        Dron / Sensor IoT            │
+│  9 datasets: aire / incendios /         URL configurable por usuario │
+│  clima / seguridad                      PM2.5, PM10, NO₂, O₃, ruido │
+└────────────────────┬──────────────────────────┬──────────────────────┘
+                     │                          │
+                     ▼                          ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                       BACKEND PHP 8.2                                │
+│                                                                      │
+│  SocrataClient.php  ─ consulta APIs con filtros SoQL + App Token     │
+│  DronRepository.php ─ upsert y lectura de MySQL                      │
+│  Config.php         ─ mapeo de datasets y campos                    │
+│                                                                      │
+│  APIs REST internas:                                                 │
+│  /api/datos_abiertos.php   /api/dron.php   /api/comparar.php        │
+│  /api/llm.php              /api/config.php  /api/chat.php           │
+└────────────────────────────────┬─────────────────────────────────────┘
+                                 │
+                                 ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│              SISTEMA MULTI-AGENTE (api/chat.php + api/llm.php)       │
+│                                                                      │
+│  Ciudadano → /api/chat.php                                           │
+│                  │                                                   │
+│                  ▼ LLM Call 1: Agente Clasificador                   │
+│             { dominio, necesita_datos, parametro }                   │
+│                  │                                                   │
+│                  ▼ Fetch automático datos.gov.co / dron              │
+│                  │                                                   │
+│                  ▼ LLM Call 2: Agente Especialista                   │
+│    ┌─────────────┬──────────────┬───────────────┬──────────────────┐ │
+│    │  Ambiental  │  Seguridad   │   Predictor   │  Simulador/VigIA │ │
+│    └─────────────┴──────────────┴───────────────┴──────────────────┘ │
+│                                                                      │
+│  /api/llm.php también soporta:                                       │
+│    tipo=interpretar  → NLG 3 oraciones                               │
+│    tipo=alertar      → JSON {"alerta", "tipo", "mensaje"}            │
+│    tipo=predecir     → {"tendencia", "prediccion_7dias"[7], ...}     │
+│    tipo=recomendar   → {"recomendaciones"[3]}                        │
+└────────────────────────────────┬─────────────────────────────────────┘
+                                 │
+                                 ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│              MYSQL / MARIADB 11.4                                    │
+│  dron_lecturas · dron_eventos_seguridad · llm_config                 │
+└────────────────────────────────┬─────────────────────────────────────┘
+                                 │
+                                 ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                FRONTEND (PHP + jQuery + Chart.js)                    │
+│                                                                      │
+│  Menú: 🌿 Ambiente  ·  🛡️ Seguridad                                 │
+│  5 temas: Aire · Ruido · Incendios · Clima · Seguridad               │
+│  3 vistas: Datos Abiertos · Dron · Comparación                       │
+│                                                                      │
+│  🤖 Panel IA: interpretación + predicción 7d (línea punteada)        │
+│  💡 Recomendaciones personalizadas por municipio                     │
+│  💬 Chat flotante con historial (5 agentes especializados)           │
+│  🔔 Alertas en tiempo real (polling 60 s): 🔥 🔊 🚨                 │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -130,8 +165,19 @@ Todos los conjuntos de datos son consultados en tiempo real via **API Socrata SO
 | Base de datos | MySQL / MariaDB 11.4 |
 | Frontend | HTML5 + jQuery 3.7 + Chart.js 4.4 |
 | API de datos | Socrata SODA (datos.gov.co) |
-| IA / LLM | Kimi K2 / Moonshot AI (OpenAI-compatible) |
+| IA / LLM | Multi-proveedor: Kimi, OpenAI, OpenRouter, Google Gemini, Anthropic Claude, Custom |
 | Hardware | Dron IoT (sensores PM2.5, PM10, NO₂, O₃, ruido, GPS) |
+
+### Proveedores LLM soportados
+
+| Proveedor | URL base | Modelos de ejemplo |
+|-----------|----------|--------------------|
+| Kimi / Moonshot AI | `api.moonshot.cn/v1` | `kimi-k2-0711`, `moonshot-v1-8k` |
+| OpenAI | `api.openai.com/v1` | `gpt-4o-mini`, `gpt-4o` |
+| OpenRouter | `openrouter.ai/api/v1` | `gemini-2.0-flash:free`, `llama-3.3-70b:free` |
+| Google Gemini | `generativelanguage.googleapis.com/v1beta/openai` | `gemini-2.0-flash`, `gemini-1.5-pro` |
+| Anthropic Claude | `api.anthropic.com/v1/messages` | `claude-haiku-4-5`, `claude-sonnet-4-6` |
+| Personalizado | URL configurable | Cualquier API OpenAI-compatible |
 
 ---
 
@@ -143,9 +189,9 @@ Ver [`docs/crisp-ml.md`](docs/crisp-ml.md) para la documentación detallada.
 1. **Comprensión del negocio** — ciudadanos sin acceso a datos ambientales en tiempo real
 2. **Comprensión de los datos** — exploración de 9 APIs Socrata + telemetría del dron
 3. **Preparación** — normalización long/wide, filtro de outliers, integración multi-fuente
-4. **Modelado** — LLM para NLG; umbrales para detección de anomalías; visualizaciones
-5. **Evaluación** — APIs verificadas en vivo (2026-07-01); alertas probadas con datos de muestra
-6. **Despliegue** — dashboard web accesible; dron como sensor IoT en campo
+4. **Modelado** — Sistema multi-agente (Clasificador → Especialista); NLG; predicción 7 días; recomendaciones personalizadas; alertas por umbrales
+5. **Evaluación** — APIs verificadas en vivo (2026-07-01); alertas probadas; chat probado con 5 dominios
+6. **Despliegue** — dashboard web accesible; dron como sensor IoT en campo; sensor URL configurable
 
 ---
 
@@ -171,18 +217,16 @@ mysql -u root -p < sql/schema.sql
 
 #### 2. Configuración
 
-`src/Config.php` ya incluye valores por defecto para desarrollo local (MySQL en localhost, sin contraseña). Ajustar si es necesario:
+`src/Config.php` ya incluye valores por defecto para desarrollo local. Ajustar si es necesario:
 
 ```php
-// src/Config.php
 public const DB = [
     'host' => '127.0.0.1',
     'port' => '3306',
     'name' => 'dashboard_entorno',
     'user' => 'root',
-    'pass' => '',          // ajustar
+    'pass' => '',
 ];
-public const DRON_URL = ''; // URL JSON del dron (vacío usa sample_dron.json)
 ```
 
 #### 3. Datos de prueba del dron
@@ -191,7 +235,7 @@ public const DRON_URL = ''; // URL JSON del dron (vacío usa sample_dron.json)
 php cron/fetch_dron.php
 ```
 
-Esto carga `cron/sample_dron.json` en la BD con lecturas de Pereira y Dosquebradas.
+Carga `cron/sample_dron.json` en la BD con lecturas de Pereira y Dosquebradas.
 
 #### 4. Servidor web
 
@@ -201,12 +245,32 @@ php -S localhost:8000 -t public
 
 Abrir `http://localhost:8000` en el navegador.
 
-#### 5. Configurar el asistente IA (opcional)
+#### 5. Configurar el asistente IA
 
-1. Hacer clic en **⚙️ IA** en el topbar del dashboard
-2. Seleccionar proveedor: **Kimi (Moonshot AI)**
-3. Ingresar tu API key de [api.moonshot.cn](https://api.moonshot.cn)
-4. Guardar → las interpretaciones y alertas quedarán activas
+Hacer clic en **⚙️ IA** en el topbar:
+
+**Tab "🤖 Asistente IA":**
+- Seleccionar proveedor (Kimi, OpenAI, OpenRouter, Gemini, Claude, Custom)
+- Seleccionar modelo
+- Ingresar API key → Guardar
+
+Una vez configurado:
+- El panel de interpretación IA aparece al cargar datos
+- Las recomendaciones personalizadas se muestran automáticamente
+- La predicción de 7 días se superpone al gráfico (si hay ≥ 10 registros)
+- El chat 💬 (esquina inferior derecha) está activo
+
+**Tab "🛰️ Sensores & Datos":**
+- **URL del sensor/dron**: endpoint JSON propio (`{ok, rows: [{municipio, estacion, fecha_formateada, diametro_aerodinamico, medicion}]}`)
+- **Socrata App Token**: token gratuito en data.socrata.com para mayor límite de llamadas a datos.gov.co
+
+#### 6. Chat con VigIA
+
+Hacer clic en **💬** (esquina inferior derecha). Preguntas de ejemplo:
+- *"¿Cómo está la calidad del aire en Pereira esta semana?"*
+- *"¿Cuál es la tendencia de hurtos en Bogotá?"*
+- *"¿Qué pasaría si la temperatura sube 5°C en mi municipio?"* → Agente Simulador
+- *"Predíceme el PM2.5 para los próximos 7 días"* → Agente Predictor
 
 ---
 
@@ -214,9 +278,10 @@ Abrir `http://localhost:8000` en el navegador.
 
 - **Impacto ambiental**: monitoreo continuo de calidad del aire en zonas con poca cobertura estatal
 - **Impacto en seguridad**: alertas predictivas basadas en patrones históricos del SIEDCO
+- **Chat ciudadano**: cualquier persona puede hacer preguntas en lenguaje natural y recibir respuestas con datos reales
+- **Predicción proactiva**: anticipa situaciones de riesgo ambiental con 7 días de horizonte
 - **Escalabilidad**: añadir un nuevo dataset requiere solo una entrada en `src/Config.php`; la arquitectura soporta N fuentes sin cambiar el frontend
-- **Replicabilidad**: cualquier municipio puede conectar su propio dron y ver sus datos junto con los abiertos nacionales
-- **Hardware abierto**: el dron es un prototipo propio; la API de entrada es un simple JSON horario, reemplazable por cualquier sensor IoT
+- **Replicabilidad**: cualquier municipio puede conectar su propio dron o sensor IoT configurando la URL en la interfaz
 
 ---
 
@@ -224,36 +289,38 @@ Abrir `http://localhost:8000` en el navegador.
 
 ```
 vigia/
-├── public/                    # Webroot (PHP built-in server / Apache)
-│   ├── index.php              # UI principal
-│   ├── api/                   # Endpoints REST internos
-│   │   ├── datos_abiertos.php # Proxy a datos.gov.co (Socrata SODA)
-│   │   ├── dron.php           # Lecturas del dron desde MySQL
-│   │   ├── comparar.php       # Series alineadas dron vs datos abiertos
-│   │   ├── llm.php            # Proxy LLM (interpretación + alertas)
-│   │   └── config.php         # Configuración del LLM
+├── public/                      # Webroot (PHP built-in server / Apache)
+│   ├── index.php                # UI principal + chat panel
+│   ├── api/                     # Endpoints REST internos
+│   │   ├── datos_abiertos.php   # Proxy a datos.gov.co (Socrata SODA)
+│   │   ├── dron.php             # Lecturas del dron / sensor externo
+│   │   ├── comparar.php         # Series alineadas dron vs datos abiertos
+│   │   ├── llm.php              # Proxy LLM: interpretar/alertar/predecir/recomendar
+│   │   ├── chat.php             # Chat multi-agente: Clasificador → Especialista
+│   │   └── config.php           # Configuración del LLM + sensor URL + Socrata token
 │   └── assets/
-│       ├── js/app.js          # Lógica principal (jQuery + Chart.js)
-│       ├── js/app-llm.js      # Módulo IA (modal, interpretación, alertas)
-│       └── css/styles.css     # Estilos
+│       ├── js/app.js            # UI principal (jQuery + Chart.js + mostrarPrediccion)
+│       ├── js/app-llm.js        # Módulo IA (interpretación + recomendaciones + predicción)
+│       ├── js/app-chat.js       # Chat flotante multi-agente
+│       └── css/styles.css       # Estilos (incluyendo chat FAB y panel)
 ├── src/
-│   ├── Config.php             # Configuración central (datasets + DB)
-│   ├── Db.php                 # Conexión PDO singleton
-│   ├── SocrataClient.php      # Cliente HTTP para datos.gov.co
-│   ├── DronRepository.php     # Repositorio de lecturas del dron
-│   └── AiClient.php           # Cliente del microservicio de visión (fase 2)
+│   ├── Config.php               # Configuración central (datasets + DB)
+│   ├── Db.php                   # Conexión PDO singleton
+│   ├── SocrataClient.php        # Cliente HTTP para datos.gov.co (con token override)
+│   ├── DronRepository.php       # Repositorio de lecturas del dron
+│   └── AiClient.php             # Cliente del microservicio de visión (fase 2)
 ├── cron/
-│   ├── fetch_dron.php         # Cron horario: descarga JSON del dron → MySQL
-│   └── sample_dron.json       # Datos de ejemplo (Pereira, Dosquebradas)
+│   ├── fetch_dron.php           # Cron horario: descarga JSON del dron → MySQL
+│   └── sample_dron.json         # Datos de ejemplo (Pereira, Dosquebradas)
 ├── sql/
-│   └── schema.sql             # Esquema MySQL completo
+│   └── schema.sql               # Esquema MySQL completo
 ├── docs/
-│   ├── crisp-ml.md            # Metodología CRISP-ML detallada
-│   └── datasets.md            # Catálogo de todos los datasets evaluados
+│   ├── crisp-ml.md              # Metodología CRISP-ML detallada
+│   └── datasets.md              # Catálogo de todos los datasets evaluados
 ├── config/
-│   └── config.example.php     # Plantilla de configuración sin secretos
+│   └── config.example.php       # Plantilla de configuración sin secretos
 └── ai-service/
-    └── app.py                 # (Fase 2) Microservicio FastAPI para visión por computador
+    └── app.py                   # (Fase 2) Microservicio FastAPI para visión por computador
 ```
 
 ---
