@@ -4,6 +4,9 @@ require_once __DIR__ . '/Config.php';
 /** Cliente HTTP mínimo para la API SODA de datos.gov.co (Socrata). */
 class SocrataClient
 {
+    /** Token de app que puede sobrescribirse en tiempo de ejecución desde DB. */
+    public static string $overrideToken = '';
+
     /**
      * @param string $datasetId  ID 4x4 del dataset (ej: 53gx-j5pc)
      * @param array  $params      Parámetros SoQL ($where, $order, $limit, $select, $group...)
@@ -17,9 +20,10 @@ class SocrataClient
             $url .= '?' . http_build_query($params);
         }
 
+        $token   = self::$overrideToken !== '' ? self::$overrideToken : Config::SOCRATA_APP_TOKEN;
         $headers = ['Accept: application/json'];
-        if (Config::SOCRATA_APP_TOKEN !== '') {
-            $headers[] = 'X-App-Token: ' . Config::SOCRATA_APP_TOKEN;
+        if ($token !== '') {
+            $headers[] = 'X-App-Token: ' . $token;
         }
 
         $ch = curl_init($url);

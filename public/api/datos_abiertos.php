@@ -2,7 +2,14 @@
 /** Proxy a datos.gov.co por tema + fuente + municipio + rango de fechas. */
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../src/Config.php';
+require_once __DIR__ . '/../../src/Db.php';
 require_once __DIR__ . '/../../src/SocrataClient.php';
+
+// Socrata App Token desde DB (sobreescribe Config::SOCRATA_APP_TOKEN si está configurado)
+try {
+    $dbTok = Db::conn()->query("SELECT cfg_val FROM llm_config WHERE cfg_key='socrata_token'")->fetchColumn();
+    if ($dbTok) SocrataClient::$overrideToken = (string) $dbTok;
+} catch (Throwable) {}
 
 /* ── normalización de filas para tema=aire ── */
 function normalizar(array $rows, array $src): array

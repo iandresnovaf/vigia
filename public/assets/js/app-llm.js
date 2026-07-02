@@ -47,8 +47,15 @@
             if (!res.ok) return;
             llmCfg = res.config;
             applyConfigToModal();
+            applySensorConfigToModal(res.config);
             if (llmCfg.has_key) startAlertPolling();
         });
+    }
+
+    function applySensorConfigToModal(cfg) {
+        if (cfg.sensor_url)    $('#cfg-sensor-url').val(cfg.sensor_url);
+        if (cfg.socrata_token) $('#cfg-socrata-token').val(cfg.socrata_token);
+        $('#sensor-url-status').text(cfg.sensor_url ? '✓ Configurada' : '');
     }
 
     /* ── Poblar modal con los valores guardados ── */
@@ -160,6 +167,30 @@
     }
     window.showToast = showToast;
 
+    /* ── Guardar config sensores ── */
+    function saveSensorConfig() {
+        const sensorUrl    = $('#cfg-sensor-url').val().trim();
+        const socrataToken = $('#cfg-socrata-token').val().trim();
+        const payload      = {};
+        if (sensorUrl    !== '') payload.sensor_url    = sensorUrl;
+        if (socrataToken !== '') payload.socrata_token = socrataToken;
+        if (!Object.keys(payload).length) { showToast('Ingresa al menos un valor.', 'warn'); return; }
+
+        $('#btn-sensor-save').prop('disabled', true).text('Guardando…');
+        $.ajax({ url: 'api/config.php', method: 'POST',
+                 contentType: 'application/json', data: JSON.stringify(payload) })
+         .done(function (res) {
+            if (res.ok) {
+                $('#sensor-url-status').text(sensorUrl ? '✓ Configurada' : '');
+                $('#llm-modal').hide();
+                showToast('✓ Configuración de sensores guardada', 'info');
+            } else {
+                showToast('Error: ' + (res.error || ''), 'warn');
+            }
+         })
+         .always(function () { $('#btn-sensor-save').prop('disabled', false).text('Guardar'); });
+    }
+
     /* ── Event handlers ── */
     $(function () {
         loadConfig();
@@ -170,6 +201,33 @@
         });
         $('#llm-modal-close, #llm-modal-overlay').on('click', function () { $('#llm-modal').hide(); });
         $(document).on('keydown', function (e) { if (e.key === 'Escape') $('#llm-modal').hide(); });
+
+        /* Tabs del modal */
+        $('.cfg-tab-btn').on('click', function () {
+            const tab = $(this).data('tab');
+            $('.cfg-tab-btn').removeClass('active');
+            $(this).addClass('active');
+            $('#cfg-tab-llm, #cfg-tab-sensores').hide();
+            $('#cfg-tab-' + tab).show();
+        });
+
+        /* Guardar y probar sensores */
+        $('#btn-sensor-save').on('click', saveSensorConfig);
+        $('#btn-sensor-test').on('click', function () {
+            const url = $('#cfg-sensor-url').val().trim();
+            if (!url) { showToast('Ingresa la URL del sensor.', 'warn'); return; }
+            const $btn = $(this).prop('disabled', true).text('Probando…');
+            $.getJSON(url)
+             .done(function (res) {
+                if (res.ok && res.rows && res.rows.length) {
+                    showToast('✓ Sensor responde — ' + res.rows.length + ' registros encontrados', 'info');
+                } else {
+                    showToast('⚠️ Respuesta inesperada: ' + JSON.stringify(res).slice(0, 80), 'warn');
+                }
+             })
+             .fail(function () { showToast('✗ No se pudo conectar al sensor (CORS o URL inválida)', 'warn'); })
+             .always(function () { $btn.prop('disabled', false).text('Probar sensor'); });
+        });
 
         $('#llm-provider').on('change', function () { updateModelOptions($(this).val()); });
 

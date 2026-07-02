@@ -19,7 +19,7 @@ try {
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $body    = json_decode(file_get_contents('php://input'), true) ?? [];
-        $allowed = ['provider', 'model', 'api_key', 'api_url'];
+        $allowed = ['provider', 'model', 'api_key', 'api_url', 'sensor_url', 'socrata_token'];
         $stmt    = $pdo->prepare(
             "INSERT INTO llm_config (cfg_key, cfg_val) VALUES (?, ?)
              ON DUPLICATE KEY UPDATE cfg_val = VALUES(cfg_val), updated_at = CURRENT_TIMESTAMP"
@@ -40,10 +40,12 @@ try {
         echo json_encode([
             'ok'     => true,
             'config' => [
-                'provider' => $rows['provider'] ?? 'kimi',
-                'model'    => $rows['model']    ?? 'moonshot-v1-8k',
-                'api_url'  => $rows['api_url']  ?? '',
-                'has_key'  => !empty($rows['api_key']),
+                'provider'      => $rows['provider']      ?? 'kimi',
+                'model'         => $rows['model']         ?? 'moonshot-v1-8k',
+                'api_url'       => $rows['api_url']       ?? '',
+                'has_key'       => !empty($rows['api_key']),
+                'sensor_url'    => $rows['sensor_url']    ?? '',
+                'socrata_token' => $rows['socrata_token'] ?? '',
             ],
         ], JSON_UNESCAPED_UNICODE);
     }

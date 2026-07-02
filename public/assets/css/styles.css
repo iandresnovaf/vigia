@@ -111,6 +111,15 @@ body {
 .toast-warning { background: #f39c12; color: #fff; }
 .toast-danger  { background: #c0392b; color: #fff; }
 
+/* ── Tabs del modal de configuración ── */
+.cfg-tabs { display: flex; border-bottom: 1px solid var(--borde); padding: .5rem 1.2rem 0; gap: .3rem; }
+.cfg-tab-btn {
+    background: none; border: 0 solid transparent; border-bottom-width: 3px;
+    padding: .45rem .8rem; font-size: .85rem; cursor: pointer; color: #777;
+}
+.cfg-tab-btn:hover { color: var(--texto); }
+.cfg-tab-btn.active { color: var(--verde2); border-bottom-color: var(--verde); font-weight: 600; }
+
 /* ── Modal LLM ── */
 #llm-modal { position: fixed; inset: 0; z-index: 8000; display: flex; align-items: center; justify-content: center; }
 #llm-modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.45); }

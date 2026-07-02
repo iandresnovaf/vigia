@@ -49,42 +49,67 @@
     <div id="llm-modal-overlay"></div>
     <div class="llm-modal-box">
         <div class="llm-modal-header">
-            <span>⚙️ Asistente IA — Configuración</span>
+            <span>⚙️ Configuración VigIA</span>
             <button id="llm-modal-close">✕</button>
         </div>
-        <div class="llm-modal-body">
-            <label class="llm-label">Proveedor LLM
-                <select id="llm-provider">
-                    <option value="kimi">Kimi / Moonshot AI</option>
-                    <option value="openai">OpenAI</option>
-                    <option value="openrouter">OpenRouter (multi-modelo)</option>
-                    <option value="gemini">Google Gemini</option>
-                    <option value="claude">Anthropic Claude</option>
-                    <option value="custom">Personalizado (OpenAI-compatible)</option>
-                </select>
-            </label>
-            <label class="llm-label">Modelo
-                <select id="llm-model"></select>
-            </label>
-            <div id="llm-model-custom-wrap" style="display:none">
-                <label class="llm-label">ID del modelo personalizado
-                    <input type="text" id="llm-model-custom" placeholder="ej: kimi-k2-0711, gpt-4o, gemini-2.0-flash…">
-                </label>
-            </div>
-            <label class="llm-label">API Key
-                <span id="llm-key-status" class="llm-key-status"></span>
-                <input type="password" id="llm-key" placeholder="Dejar vacío para no cambiar la guardada">
-            </label>
-            <div id="llm-url-wrap" style="display:none">
-                <label class="llm-label">URL del API (base OpenAI-compatible)
-                    <input type="url" id="llm-url" placeholder="https://api.example.com/v1/chat/completions">
-                </label>
-            </div>
-            <p class="llm-hint">La API key se guarda en la base de datos local. Nunca sale del servidor.</p>
+        <div class="cfg-tabs">
+            <button class="cfg-tab-btn active" data-tab="llm">🤖 Asistente IA</button>
+            <button class="cfg-tab-btn" data-tab="sensores">🛰️ Sensores & Datos</button>
         </div>
-        <div class="llm-modal-footer">
-            <button id="btn-llm-test" class="btn">Probar conexión</button>
-            <button id="btn-llm-save" class="btn btn-primary">Guardar</button>
+        <!-- Tab: Asistente IA -->
+        <div id="cfg-tab-llm">
+            <div class="llm-modal-body">
+                <label class="llm-label">Proveedor LLM
+                    <select id="llm-provider">
+                        <option value="kimi">Kimi / Moonshot AI</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="openrouter">OpenRouter (multi-modelo)</option>
+                        <option value="gemini">Google Gemini</option>
+                        <option value="claude">Anthropic Claude</option>
+                        <option value="custom">Personalizado (OpenAI-compatible)</option>
+                    </select>
+                </label>
+                <label class="llm-label">Modelo
+                    <select id="llm-model"></select>
+                </label>
+                <div id="llm-model-custom-wrap" style="display:none">
+                    <label class="llm-label">ID del modelo personalizado
+                        <input type="text" id="llm-model-custom" placeholder="ej: kimi-k2-0711, gpt-4o, gemini-2.0-flash…">
+                    </label>
+                </div>
+                <label class="llm-label">API Key
+                    <span id="llm-key-status" class="llm-key-status"></span>
+                    <input type="password" id="llm-key" placeholder="Dejar vacío para no cambiar la guardada">
+                </label>
+                <div id="llm-url-wrap" style="display:none">
+                    <label class="llm-label">URL del API (OpenAI-compatible)
+                        <input type="url" id="llm-url" placeholder="https://api.example.com/v1/chat/completions">
+                    </label>
+                </div>
+                <p class="llm-hint">La API key se guarda en la base de datos local. Nunca sale del servidor.</p>
+            </div>
+            <div class="llm-modal-footer">
+                <button id="btn-llm-test" class="btn">Probar conexión</button>
+                <button id="btn-llm-save" class="btn btn-primary">Guardar</button>
+            </div>
+        </div>
+        <!-- Tab: Sensores & Datos -->
+        <div id="cfg-tab-sensores" style="display:none">
+            <div class="llm-modal-body">
+                <label class="llm-label">URL del sensor / dron (API JSON)
+                    <span id="sensor-url-status" class="llm-key-status"></span>
+                    <input type="url" id="cfg-sensor-url" placeholder="https://misensor.com/api_datos.php">
+                </label>
+                <p class="llm-hint">El endpoint debe responder: <code>{"ok":true,"rows":[{"municipio","estacion","fecha_formateada","diametro_aerodinamico","medicion"}…]}</code></p>
+                <label class="llm-label">Socrata App Token (datos.gov.co)
+                    <input type="text" id="cfg-socrata-token" placeholder="Opcional — aumenta el límite de llamadas a la API">
+                </label>
+                <p class="llm-hint">Token gratuito en <strong>data.socrata.com/profile</strong> · Permite hasta 1 000 llamadas/hora sin token, 10 000 con token.</p>
+            </div>
+            <div class="llm-modal-footer">
+                <button id="btn-sensor-test" class="btn">Probar sensor</button>
+                <button id="btn-sensor-save" class="btn btn-primary">Guardar</button>
+            </div>
         </div>
     </div>
 </div>
