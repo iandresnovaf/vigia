@@ -1,0 +1,9 @@
+# Microservicio HTTP de VigIA (camino pull). Ver docstring de app.py.
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+
+# --- Stack del modelo de visión (repo NestorAndresSantosVidales/vigia) ---
+# Instalar en el MISMO entorno, siguiendo las versiones del repo de Néstor:
+#   torch==2.1.2  torchvision  mmengine  mmcv==2.1.0  mmaction2==1.2.0  decord==0.6.0
+# No se fijan aquí para no imponer CUDA/CPU; usar el entorno del modelo entrenado.

@@ -172,6 +172,30 @@ class Config
                     'nota'            => 'Policía Nacional SIEDCO. Cobertura nacional, hasta 2026.',
                 ],
                 [
+                    'id'              => '7i2x-h5vp',
+                    'label'           => 'Hurto a Comercio — SIEDCO',
+                    'url'             => 'https://www.datos.gov.co/Seguridad-y-Defensa/HURTO-A-COMERCIO/7i2x-h5vp',
+                    'formato'         => 'long',
+                    'campo_fecha'     => 'fecha_hecho',
+                    'campo_valor'     => 'cantidad',
+                    'campo_municipio' => 'municipio',
+                    'campo_estacion'  => null,
+                    'campo_categoria' => null,
+                    'nota'            => 'Policía Nacional SIEDCO. Hurto a establecimientos de comercio, cobertura nacional.',
+                ],
+                [
+                    'id'              => '7mn7-vzqp',
+                    'label'           => 'Hurto a Residencias — SIEDCO',
+                    'url'             => 'https://www.datos.gov.co/Seguridad-y-Defensa/HURTO-A-RESIDENCIAS/7mn7-vzqp',
+                    'formato'         => 'long',
+                    'campo_fecha'     => 'fecha_hecho',
+                    'campo_valor'     => 'cantidad',
+                    'campo_municipio' => 'municipio',
+                    'campo_estacion'  => null,
+                    'campo_categoria' => null,
+                    'nota'            => 'Policía Nacional SIEDCO. Hurto a residencias, cobertura nacional.',
+                ],
+                [
                     'id'              => 'm8fd-ahd9',
                     'label'           => 'Homicidios — SIEDCO',
                     'url'             => 'https://www.datos.gov.co/Seguridad-y-Defensa/HOMICIDIO/m8fd-ahd9',
@@ -198,4 +222,32 @@ class Config
             ],
         ],
     ];
+
+    /**
+     * Mapa de clases del modelo de visión (TSN — repo de Néstor) a su modalidad
+     * de hurto y dataset SIEDCO en datos.gov.co, para el cruce en tiempo real.
+     * Cada entrada: [modalidad legible, id 4x4 del dataset SIEDCO].
+     * Clases sin dataset (riesgo/normal) se mapean a null → no hay cruce estadístico.
+     */
+    public const CV_CLASS_MAP = [
+        // Hurto → dataset de modalidad
+        'robbery'     => ['modalidad' => 'Hurto a personas (atraco)', 'dataset' => '4rxi-8m8d'],
+        'stealing'    => ['modalidad' => 'Hurto a personas',          'dataset' => '4rxi-8m8d'],
+        'shoplifting' => ['modalidad' => 'Hurto a comercio',          'dataset' => '7i2x-h5vp'],
+        'burglary'    => ['modalidad' => 'Hurto a residencias',       'dataset' => '7mn7-vzqp'],
+        // Riesgo/violencia → dataset relacionado
+        'fighting'    => ['modalidad' => 'Lesiones personales', 'dataset' => 'jr6v-i33g'],
+        'assault'     => ['modalidad' => 'Lesiones personales', 'dataset' => 'jr6v-i33g'],
+        'abuse'       => ['modalidad' => 'Lesiones personales', 'dataset' => 'jr6v-i33g'],
+        'vandalism'   => ['modalidad' => 'Lesiones personales', 'dataset' => 'jr6v-i33g'],
+        'shooting'    => ['modalidad' => 'Homicidio', 'dataset' => 'm8fd-ahd9'],
+        'explosion'   => ['modalidad' => 'Homicidio', 'dataset' => 'm8fd-ahd9'],
+        'arson'       => ['modalidad' => 'Homicidio', 'dataset' => 'm8fd-ahd9'],
+        // Normal → sin cruce
+        'normal'      => ['modalidad' => 'Actividad normal', 'dataset' => null],
+    ];
+
+    /** Conjuntos de clases del TSN para agregar scores y decidir nivel de alerta. */
+    public const CV_THEFT_CLASSES = ['stealing', 'shoplifting', 'robbery', 'burglary'];
+    public const CV_RISK_CLASSES  = ['fighting', 'assault', 'abuse', 'vandalism', 'shooting', 'explosion', 'arson'];
 }

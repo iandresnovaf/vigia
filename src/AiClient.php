@@ -45,4 +45,51 @@ class AiClient
             'raw'                 => $json,
         ];
     }
+
+    /**
+     * (Camino pull) Envía un video al microservicio TSN (ai-service/app.py, POST /detectar)
+     * y devuelve la clasificación de hurto/riesgo.
+     *
+     * @param string $rutaVideo Ruta local del video MP4 a analizar.
+     * @return array{tipo:string, nivel_alerta:string, theft_score:float, risk_score:float, top5:array, raw:array}
+     */
+    public static function detectar(string $rutaVideo): array
+    {
+        if (Config::AI_SERVICE_URL === '') {
+            throw new RuntimeException('AI_SERVICE_URL no configurado (microservicio de visión desactivado).');
+        }
+        if (!is_file($rutaVideo)) {
+            throw new RuntimeException("No existe el video: $rutaVideo");
+        }
+
+        $ch = curl_init(rtrim(Config::AI_SERVICE_URL, '/') . '/detectar');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_TIMEOUT        => 180, // la inferencia de video puede tardar
+            CURLOPT_POSTFIELDS     => ['video' => new CURLFile($rutaVideo)],
+        ]);
+        $body = curl_exec($ch);
+        $err  = curl_error($ch);
+        curl_close($ch);
+
+        if ($body === false) {
+            throw new RuntimeException("Error al llamar al microservicio de visión: $err");
+        }
+        $json = json_decode($body, true);
+        if (!is_array($json)) {
+            throw new RuntimeException('Respuesta inválida del microservicio de visión.');
+        }
+        if (($json['ok'] ?? true) === false) {
+            throw new RuntimeException('Microservicio de visión: ' . ($json['error'] ?? 'error desconocido'));
+        }
+        return [
+            'tipo'         => $json['tipo']         ?? 'desconocido',
+            'nivel_alerta' => $json['nivel_alerta'] ?? 'baja',
+            'theft_score'  => (float) ($json['theft_score'] ?? 0),
+            'risk_score'   => (float) ($json['risk_score']  ?? 0),
+            'top5'         => $json['top5'] ?? [],
+            'raw'          => $json,
+        ];
+    }
 }

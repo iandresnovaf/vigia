@@ -91,8 +91,9 @@ function agentSystem(string $dominio): string
             'Máximo 4 oraciones, en español.',
         'seguridad' =>
             'Eres el Agente Seguridad de VigIA, experto en seguridad ciudadana en Colombia. ' .
-            'Analizas datos de hurtos, homicidios y lesiones con contexto local y das recomendaciones de prevención. ' .
-            'Máximo 4 oraciones, en español.',
+            'Analizas datos de hurtos, homicidios y lesiones (SIEDCO) y, cuando existen, cruzas las ' .
+            'detecciones en tiempo real del modelo de visión (hurto/riesgo por cámara) con esa estadística oficial. ' .
+            'Das contexto local y recomendaciones de prevención. Máximo 4 oraciones, en español.',
         'prediccion' =>
             'Eres el Agente Predictor de VigIA. Analizas tendencias históricas de datos ambientales y de seguridad ' .
             'en Colombia y proyectas escenarios futuros indicando nivel de confianza. Máximo 4 oraciones, en español.',
@@ -160,6 +161,39 @@ try {
         } catch (Throwable) {}
     }
 
+    // Paso 2b — Para seguridad, adjuntar eventos del modelo de visión (tiempo real) + su cruce.
+    $eventosCtx = '';
+    if ($dominio === 'seguridad') {
+        try {
+            $sql = "SELECT captured_at, municipio, tipo_comportamiento, nivel_alerta, confianza, ai_result_json
+                    FROM dron_eventos_seguridad ";
+            $args = [];
+            if ($municipio !== '') {
+                $sql .= "WHERE upper(municipio) = upper(:m) ";
+                $args[':m'] = $municipio;
+            }
+            $sql .= "ORDER BY captured_at DESC LIMIT 5";
+            $st = Db::conn()->prepare($sql);
+            $st->execute($args);
+            $evs = $st->fetchAll(PDO::FETCH_ASSOC);
+            if ($evs) {
+                $resumen = array_map(function ($e) {
+                    $j     = json_decode((string)($e['ai_result_json'] ?? ''), true);
+                    $cruce = is_array($j) && isset($j['cruce']['narrativa']) ? $j['cruce']['narrativa'] : '';
+                    return [
+                        'fecha'     => substr((string)$e['captured_at'], 0, 16),
+                        'municipio' => $e['municipio'],
+                        'tipo'      => $e['tipo_comportamiento'],
+                        'nivel'     => $e['nivel_alerta'],
+                        'cruce'     => $cruce,
+                    ];
+                }, $evs);
+                $eventosCtx = "\n\nDetecciones recientes del modelo de visión (tiempo real) y su cruce con SIEDCO: " .
+                              json_encode($resumen, JSON_UNESCAPED_UNICODE);
+            }
+        } catch (Throwable) {}
+    }
+
     // Paso 3 — Agente Especialista
     $historial = '';
     foreach (array_slice($contexto, -4) as $msg) {
@@ -168,7 +202,7 @@ try {
     }
     $sysEspecialista  = agentSystem($dominio);
     $userEspecialista = ($historial ? "Conversación previa:\n$historial\n" : '') .
-                        "Municipio: $municipio\nPregunta: $mensaje" . $datosCtx;
+                        "Municipio: $municipio\nPregunta: $mensaje" . $datosCtx . $eventosCtx;
     $respuesta = chatCall($cfg, $sysEspecialista, $userEspecialista, 500);
 
     echo json_encode([

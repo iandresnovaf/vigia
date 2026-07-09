@@ -148,6 +148,15 @@
 
     <!-- Recomendaciones personalizadas por municipio -->
     <section id="llm-recommendations" class="llm-reco-panel" style="display:none"></section>
+
+    <!-- Seguridad en tiempo real: eventos del modelo de visión × SIEDCO -->
+    <section id="seguridad-tiempo-real" class="seg-panel" style="display:none">
+        <div class="seg-header">
+            <span>🛰️ Seguridad en Tiempo Real <small>· visión IA × datos.gov.co (SIEDCO)</small></span>
+            <span id="seg-status" class="seg-status"></span>
+        </div>
+        <div id="seg-eventos" class="seg-eventos"></div>
+    </section>
 </main>
 
 <footer class="pie">
@@ -178,5 +187,6 @@
 <script src="assets/js/app.js?v=<?= filemtime(__DIR__ . '/assets/js/app.js') ?>"></script>
 <script src="assets/js/app-llm.js?v=<?= filemtime(__DIR__ . '/assets/js/app-llm.js') ?>"></script>
 <script src="assets/js/app-chat.js?v=<?= filemtime(__DIR__ . '/assets/js/app-chat.js') ?>"></script>
+<script src="assets/js/app-seguridad.js?v=<?= filemtime(__DIR__ . '/assets/js/app-seguridad.js') ?>"></script>
 </body>
 </html>

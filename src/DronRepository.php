@@ -40,15 +40,18 @@ class DronRepository
     public function guardarEvento(array $e, string $deviceId): int
     {
         $sql = "INSERT IGNORE INTO dron_eventos_seguridad
-            (device_id, captured_at, lat, lng, tipo_comportamiento, confianza, media_url, ai_result_json)
-            VALUES (:device_id, :captured_at, :lat, :lng, :tipo, :confianza, :media_url, :ai_json)";
+            (device_id, captured_at, municipio, cod_muni, lat, lng, tipo_comportamiento, nivel_alerta, confianza, media_url, ai_result_json)
+            VALUES (:device_id, :captured_at, :municipio, :cod_muni, :lat, :lng, :tipo, :nivel, :confianza, :media_url, :ai_json)";
         $st = $this->db->prepare($sql);
         $st->execute([
             ':device_id'   => $deviceId,
             ':captured_at' => $e['captured_at'] ?? date('Y-m-d H:i:s'),
+            ':municipio'   => $e['municipio']   ?? null,
+            ':cod_muni'    => $e['cod_muni']    ?? null,
             ':lat'         => $e['lat']  ?? null,
             ':lng'         => $e['lng']  ?? null,
             ':tipo'        => $e['tipo_comportamiento'] ?? 'desconocido',
+            ':nivel'       => $e['nivel_alerta'] ?? null,
             ':confianza'   => $e['confianza'] ?? null,
             ':media_url'   => $e['media_url'] ?? null,
             ':ai_json'     => isset($e['ai_result_json'])
@@ -77,7 +80,8 @@ class DronRepository
     /** Últimos eventos de seguridad. */
     public function eventos(int $limit = 200): array
     {
-        $sql = "SELECT captured_at, lat, lng, tipo_comportamiento, confianza, media_url
+        $sql = "SELECT id, captured_at, municipio, cod_muni, lat, lng,
+                       tipo_comportamiento, nivel_alerta, confianza, media_url
                 FROM dron_eventos_seguridad
                 ORDER BY captured_at DESC LIMIT " . (int) $limit;
         return $this->db->query($sql)->fetchAll();

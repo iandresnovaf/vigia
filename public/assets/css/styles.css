@@ -222,3 +222,40 @@ body {
     border-radius: 6px; font-size: .85rem;
 }
 .chat-input-row input:focus { outline: none; border-color: var(--verde); }
+
+/* ── Seguridad en Tiempo Real (visión IA × SIEDCO) ── */
+.seg-panel {
+    background: var(--panel); border: 1px solid var(--borde);
+    border-radius: 8px; padding: .9rem 1rem; margin-top: .8rem;
+}
+.seg-header {
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: 700; font-size: .9rem; color: var(--azul); margin-bottom: .7rem;
+    border-bottom: 2px solid var(--verde); padding-bottom: .5rem;
+}
+.seg-header small { font-weight: 400; color: #7b8794; font-size: .72rem; }
+.seg-status { font-size: .74rem; color: #7b8794; font-weight: 500; }
+.seg-eventos { display: flex; flex-direction: column; gap: .55rem; }
+.seg-vacio { color: #888; font-size: .85rem; margin: .3rem 0; }
+
+.seg-evento {
+    border: 1px solid var(--borde); border-left-width: 4px;
+    border-radius: 6px; padding: .6rem .8rem; background: #fbfcfe;
+}
+.seg-evento-top { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.seg-badge { font-size: .78rem; font-weight: 700; }
+.seg-tipo { font-size: .86rem; font-weight: 600; color: var(--texto); text-transform: capitalize; }
+.seg-conf { margin-left: auto; font-size: .74rem; color: #7b8794; font-weight: 600; }
+.seg-meta { font-size: .74rem; color: #7b8794; margin-top: .25rem; }
+.seg-cruce {
+    margin-top: .5rem; font-size: .82rem; line-height: 1.45; color: #2c3e50;
+    background: #f0faf6; border: 1px solid rgba(29,184,127,.25);
+    border-radius: 5px; padding: .4rem .6rem;
+}
+.seg-tend { font-weight: 600; color: var(--verde2); }
+
+.seg-alta   { border-left-color: #c0392b; }
+.seg-riesgo { border-left-color: #e67e22; }
+.seg-media  { border-left-color: #f39c12; }
+.seg-baja   { border-left-color: #7b8794; }
+.seg-normal { border-left-color: var(--verde); }
