@@ -259,3 +259,41 @@ body {
 .seg-media  { border-left-color: #f39c12; }
 .seg-baja   { border-left-color: #7b8794; }
 .seg-normal { border-left-color: var(--verde); }
+
+/* ── Modelo de Visión: reproductor + redirect ── */
+.mv-panel {
+    background: var(--panel); border: 1px solid var(--borde);
+    border-radius: 8px; padding: .9rem 1rem; margin-top: .8rem;
+}
+.mv-header {
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    flex-wrap: wrap; font-weight: 700; font-size: .9rem; color: var(--azul);
+    border-bottom: 2px solid var(--verde); padding-bottom: .5rem;
+}
+.mv-header small { font-weight: 400; color: #7b8794; font-size: .72rem; }
+.mv-link { text-decoration: none; white-space: nowrap; }
+.mv-intro { font-size: .82rem; color: #566; line-height: 1.5; margin: .6rem 0 .8rem; }
+.mv-body { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; align-items: start; }
+.mv-player video {
+    width: 100%; max-height: 380px; background: #000;
+    border-radius: 8px; border: 1px solid var(--borde);
+}
+.mv-caption { font-size: .82rem; color: var(--texto); font-weight: 600; margin: .5rem 0 0; }
+.mv-playlist-title { font-size: .8rem; font-weight: 700; color: var(--verde2); margin-bottom: .5rem; }
+.mv-playlist ul { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; }
+.mv-playlist li {
+    padding: .5rem .65rem; font-size: .82rem; border: 1px solid var(--borde);
+    border-radius: 6px; margin-bottom: .35rem; cursor: pointer; background: #fbfcfe;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mv-playlist li:hover { background: #eef3f8; }
+.mv-playlist li.activo { background: var(--verde); color: #fff; border-color: var(--verde); font-weight: 600; }
+.mv-empty {
+    font-size: .84rem; color: #7a5c00; line-height: 1.55;
+    background: #fff8e1; border: 1px solid #ffe08a; border-radius: 6px; padding: .8rem .9rem;
+}
+.mv-empty code { background: rgba(0,0,0,.06); padding: .05rem .3rem; border-radius: 3px; }
+
+@media (max-width: 720px) {
+    .mv-body { grid-template-columns: 1fr; }
+}

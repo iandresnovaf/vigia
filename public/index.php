@@ -1,4 +1,19 @@
-<?php require_once __DIR__ . '/../src/Config.php'; ?>
+<?php
+require_once __DIR__ . '/../src/Config.php';
+
+// URL del modelo de visión entrenado (Streamlit) para el redirect desde el dashboard.
+$modeloVisionUrl = 'https://xbmpkywc5iisxlzxmwvfsc.streamlit.app/';
+
+// Videos de ejemplo etiquetados "robbery" (UCF-Crime). El usuario deja sus .mp4
+// en public/assets/videos/robbery/ y aparecen automáticamente en el reproductor.
+$videoDir   = __DIR__ . '/assets/videos/robbery';
+$videoFiles = is_dir($videoDir) ? glob($videoDir . '/*.{mp4,webm,ogg,MP4}', GLOB_BRACE) : [];
+sort($videoFiles);
+$videosRobbery = array_map(fn($f) => [
+    'nombre' => pathinfo($f, PATHINFO_FILENAME),
+    'url'    => 'assets/videos/robbery/' . rawurlencode(basename($f)),
+], $videoFiles ?: []);
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -16,6 +31,8 @@
         ], Config::DATASETS),
         JSON_UNESCAPED_UNICODE
     ) ?>;
+    window.VIGIA_MODEL_URL = <?= json_encode($modeloVisionUrl, JSON_UNESCAPED_SLASHES) ?>;
+    window.VIGIA_VIDEOS    = <?= json_encode($videosRobbery, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     </script>
 </head>
 <body>
@@ -157,6 +174,31 @@
         </div>
         <div id="seg-eventos" class="seg-eventos"></div>
     </section>
+
+    <!-- Modelo de Visión: redirect al modelo entrenado + reproductor de ejemplos "robbery" -->
+    <section id="modelo-vision" class="mv-panel" style="display:none">
+        <div class="mv-header">
+            <span>🎥 Modelo de Visión <small>· detección de eventos de seguridad (TSN)</small></span>
+            <a id="mv-modelo-link" class="btn btn-primary mv-link" target="_blank" rel="noopener">
+                Abrir modelo en vivo ↗
+            </a>
+        </div>
+        <p class="mv-intro">
+            Clips de ejemplo etiquetados <strong>robbery</strong> (dataset UCF-Crime) con los que se entrenó el modelo.
+            Abre el modelo en vivo para analizar un video y ver la clasificación de hurto/riesgo.
+        </p>
+        <div class="mv-body">
+            <div class="mv-player">
+                <video id="mv-video" controls preload="metadata" playsinline></video>
+                <p id="mv-caption" class="mv-caption"></p>
+            </div>
+            <div class="mv-playlist">
+                <div class="mv-playlist-title">🗂️ Ejemplos «robbery»</div>
+                <ul id="mv-list"></ul>
+            </div>
+        </div>
+        <div id="mv-empty" class="mv-empty" style="display:none"></div>
+    </section>
 </main>
 
 <footer class="pie">
@@ -188,5 +230,6 @@
 <script src="assets/js/app-llm.js?v=<?= filemtime(__DIR__ . '/assets/js/app-llm.js') ?>"></script>
 <script src="assets/js/app-chat.js?v=<?= filemtime(__DIR__ . '/assets/js/app-chat.js') ?>"></script>
 <script src="assets/js/app-seguridad.js?v=<?= filemtime(__DIR__ . '/assets/js/app-seguridad.js') ?>"></script>
+<script src="assets/js/app-videos.js?v=<?= filemtime(__DIR__ . '/assets/js/app-videos.js') ?>"></script>
 </body>
 </html>
