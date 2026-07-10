@@ -1,8 +1,9 @@
-# Datasets utilizados — Dashboard de Entorno
+# Datasets utilizados — VigIA
 
 Todos los datasets provienen de **[datos.gov.co](https://www.datos.gov.co/)** via API Socrata SODA.  
 Endpoint base: `https://www.datos.gov.co/resource/{ID}.json`  
-Verificación: 2026-07-01
+Verificación: 2026-07-01 (seguridad ampliada 2026-07-09).  
+**Total integrado: 11 datasets** (4 aire · 1 incendios · 1 clima · 5 seguridad) + sensor IoT real.
 
 ---
 
@@ -49,8 +50,14 @@ Todos son del sistema **SIEDCO (Policía Nacional de Colombia)**. Estructura hom
 | # | Nombre | ID | Enlace | Cobertura | Nota |
 |---|--------|----|--------|-----------|------|
 | 1 | **Hurto a Personas — SIEDCO** | `4rxi-8m8d` | [Ver dataset](https://www.datos.gov.co/Seguridad-y-Defensa/HURTO-PERSONAS/4rxi-8m8d/data) | Nacional | Actualizado a 2026. Dataset principal de seguridad. |
-| 2 | **Homicidios — SIEDCO** | `m8fd-ahd9` | [Ver dataset](https://www.datos.gov.co/Seguridad-y-Defensa/HOMICIDIO/m8fd-ahd9) | Nacional | Desde 2003. Incluye campos de arma, modalidad y caracterización. |
-| 3 | **Lesiones Personales — SIEDCO** | `jr6v-i33g` | [Ver dataset](https://www.datos.gov.co/Seguridad-y-Defensa/LESIONES-PERSONALES/jr6v-i33g) | Nacional | Desde 2003. |
+| 2 | **Hurto a Comercio — SIEDCO** | `7i2x-h5vp` | [Ver dataset](https://www.datos.gov.co/Seguridad-y-Defensa/HURTO-A-COMERCIO/7i2x-h5vp) | Nacional | Cruce con clase CV *Shoplifting*. |
+| 3 | **Hurto a Residencias — SIEDCO** | `7mn7-vzqp` | [Ver dataset](https://www.datos.gov.co/Seguridad-y-Defensa/HURTO-A-RESIDENCIAS/7mn7-vzqp) | Nacional | Cruce con clase CV *Burglary*. |
+| 4 | **Homicidios — SIEDCO** | `m8fd-ahd9` | [Ver dataset](https://www.datos.gov.co/Seguridad-y-Defensa/HOMICIDIO/m8fd-ahd9) | Nacional | Desde 2003. Incluye campos de arma, modalidad y caracterización. |
+| 5 | **Lesiones Personales — SIEDCO** | `jr6v-i33g` | [Ver dataset](https://www.datos.gov.co/Seguridad-y-Defensa/LESIONES-PERSONALES/jr6v-i33g) | Nacional | Desde 2003. |
+
+> **Integración visión × datos abiertos:** el modelo de visión (TSN) clasifica eventos de hurto y
+> `src/CruceHurto.php` los mapea a la modalidad SIEDCO correspondiente (personas/comercio/residencias)
+> para contextualizar la detección en vivo con la estadística oficial del municipio.
 
 ### Descartados — Seguridad
 

@@ -163,7 +163,48 @@ body {
 }
 
 /* ── Panel de predicción (dentro de llm-panel) ── */
-.llm-pred { margin: .5rem 0 0; font-size: .82rem; color: #6b6b2d; font-style: italic; }
+.llm-pred { margin: .6rem 0 0; padding-top: .5rem; border-top: 1px dashed var(--borde); }
+.pred-title { font-size: .85rem; font-weight: 700; color: #b9770e; }
+.pred-narr  { font-size: .84rem; color: #2c3e50; margin: .25rem 0; line-height: 1.5; }
+.pred-metrics {
+    font-size: .76rem; color: #566; background: #fff8ec; border: 1px solid #ffe0a8;
+    border-radius: 5px; padding: .35rem .55rem; display: inline-block; margin-top: .2rem;
+}
+.pred-metrics strong { color: #b9770e; }
+
+/* ── Trazabilidad / procedencia de datos ── */
+.proc-line {
+    font-size: .72rem; color: #7b8794; margin-top: .5rem; line-height: 1.5;
+    border-top: 1px solid var(--borde); padding-top: .4rem;
+}
+.proc-line code { background: rgba(0,0,0,.06); padding: .02rem .28rem; border-radius: 3px; color: #2c3e50; }
+.ia-badge {
+    display: inline-block; font-size: .66rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--verde2); border: 1px solid rgba(18,163,106,.4);
+    border-radius: 4px; padding: .05rem .35rem; margin-left: .3rem;
+}
+.msg-proc { font-size: .68rem; color: #9aa5b1; margin-top: .25rem; align-self: flex-start; }
+
+/* ── Modo jurado (overlay) ── */
+#jurado-modal { position: fixed; inset: 0; z-index: 8500; display: flex; align-items: center; justify-content: center; }
+#jurado-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.5); }
+.jurado-box {
+    position: relative; z-index: 1; background: #fff; border-radius: 12px;
+    width: min(560px, 95vw); max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,.3);
+}
+.jurado-header {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--azul); color: #fff; padding: .9rem 1.2rem;
+    border-radius: 12px 12px 0 0; font-weight: 700;
+}
+.jurado-header button { background: none; border: 0; color: rgba(255,255,255,.75); font-size: 1.1rem; cursor: pointer; }
+.jurado-intro { font-size: .82rem; color: #566; margin: .8rem 1.2rem; }
+#jurado-steps { margin: 0 1.2rem 1.2rem; padding-left: 1.2rem; display: flex; flex-direction: column; gap: .7rem; }
+.jurado-step { font-size: .86rem; line-height: 1.5; color: var(--texto); }
+.jurado-step-txt { display: block; margin-bottom: .35rem; }
+.jurado-do { padding: .35rem .8rem; font-size: .8rem; background: var(--verde); }
+.jurado-do:hover { background: var(--verde2); }
 
 /* ── Panel de recomendaciones ── */
 .llm-reco-panel {

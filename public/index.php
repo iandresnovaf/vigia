@@ -55,8 +55,22 @@ $videosRobbery = array_map(fn($f) => [
         </div>
         <?php endforeach; ?>
     </nav>
+    <button id="btn-jurado" class="btn-llm-icon" title="Guía de evaluación en 5 minutos">🧑‍⚖️ Modo jurado</button>
     <button id="btn-llm-config" class="btn-llm-icon" title="Asistente IA — configurar LLM">⚙️ IA</button>
 </header>
+
+<!-- Overlay: Modo jurado (evalúa en 5 minutos) -->
+<div id="jurado-modal" style="display:none">
+    <div id="jurado-overlay"></div>
+    <div class="jurado-box">
+        <div class="jurado-header">
+            <span>🧑‍⚖️ Evalúa VigIA en 5 minutos</span>
+            <button id="jurado-close">✕</button>
+        </div>
+        <p class="jurado-intro">Guía paso a paso para el jurado. Cada paso ejecuta la acción en el dashboard.</p>
+        <ol id="jurado-steps"></ol>
+    </div>
+</div>
 
 <!-- Toast container -->
 <div id="toast-container"></div>
@@ -231,5 +245,6 @@ $videosRobbery = array_map(fn($f) => [
 <script src="assets/js/app-chat.js?v=<?= filemtime(__DIR__ . '/assets/js/app-chat.js') ?>"></script>
 <script src="assets/js/app-seguridad.js?v=<?= filemtime(__DIR__ . '/assets/js/app-seguridad.js') ?>"></script>
 <script src="assets/js/app-videos.js?v=<?= filemtime(__DIR__ . '/assets/js/app-videos.js') ?>"></script>
+<script src="assets/js/app-jurado.js?v=<?= filemtime(__DIR__ . '/assets/js/app-jurado.js') ?>"></script>
 </body>
 </html>

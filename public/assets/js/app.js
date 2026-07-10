@@ -160,7 +160,9 @@
             }
 
             if (typeof window.interpretarDatos === 'function') {
-                window.interpretarDatos(rows.slice(0, 20), state.tema);
+                window.interpretarDatos(rows, state.tema, {
+                    dataset_id: res.dataset_id, fuente: res.fuente, registros: res.count,
+                });
             }
         });
     }
@@ -227,8 +229,8 @@
         else cargarComparar();
     }
 
-    /* ---------- predicción (línea punteada en chart) ---------- */
-    window.mostrarPrediccion = function (valores7dias) {
+    /* ---------- predicción (línea punteada + banda de confianza) ---------- */
+    window.mostrarPrediccion = function (valores7dias, intervalo) {
         if (!chart || chart.config.type !== 'line') return;
         const hoy    = new Date();
         const labels = [];
@@ -238,11 +240,24 @@
             labels.push(d.toISOString().slice(5, 10));
         }
         const baseLen = chart.data.labels.length;
-        const pred    = new Array(baseLen).fill(null).concat(valores7dias.map(Number));
+        const pad     = function (arr) { return new Array(baseLen).fill(null).concat(arr.map(Number)); };
         chart.data.datasets = chart.data.datasets.filter(function (ds) { return !ds._pred; });
+
+        // Banda de confianza (si viene): límite inferior + relleno hasta el superior.
+        if (intervalo && intervalo.low && intervalo.high) {
+            chart.data.datasets.push({
+                label: 'IC inferior', data: pad(intervalo.low), _pred: true,
+                borderColor: 'transparent', pointRadius: 0, fill: false, spanGaps: true,
+            });
+            chart.data.datasets.push({
+                label: 'Banda de confianza (95%)', data: pad(intervalo.high), _pred: true,
+                borderColor: 'transparent', backgroundColor: 'rgba(243,156,18,.15)',
+                pointRadius: 0, fill: '-1', spanGaps: true,
+            });
+        }
         chart.data.datasets.push({
             label:           'Predicción (7d)',
-            data:            pred,
+            data:            pad(valores7dias),
             borderColor:     '#f39c12',
             backgroundColor: 'transparent',
             borderDash:      [5, 5],

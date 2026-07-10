@@ -18,13 +18,17 @@ Los ciudadanos colombianos no tienen acceso fácil a información ambiental y de
 ### La solución
 
 Un único punto de acceso que:
-- Consolida **9 fuentes de datos abiertos** de calidad del aire, incendios, clima y seguridad
-- Integra lecturas horarias de un **dron IoT** con sensores PM2.5, PM10, NO₂, O₃ y ruido
+- Consolida **11 datasets de datos.gov.co** (4 aire, 1 incendios, 1 clima, 5 seguridad) vía API Socrata SODA
+- Integra un **sensor IoT real desplegado** (ESP8266 + MQ2) que envía mediciones de campo por API
+- **Predice tendencias a 7 días con analítica estadística** (regresión lineal + intervalo de confianza + **backtesting con métricas MAE/RMSE/MAPE**) — reproducible, no generada por IA
 - Despliega un **sistema multi-agente** con 5 agentes especializados (Ambiental, Seguridad, Predictor, Simulador, VigIA)
-- Permite **chat conversacional** en lenguaje natural: el ciudadano pregunta y los agentes responden con datos reales
-- **Predice tendencias** a 7 días con línea punteada en el gráfico y análisis de confianza
+- Permite **chat conversacional** en lenguaje natural con **trazabilidad**: cada respuesta muestra dataset, ID, municipio, registros y fecha
+- Cruza **detección de hurto por visión (modelo TSN)** con la estadística SIEDCO por municipio
 - Genera **recomendaciones personalizadas** por municipio y tema
-- Emite **alertas automáticas en tiempo real**: 🔥 incendio, 🔊 ruido excesivo, 🚨 seguridad
+- Emite **alertas por reglas determinísticas auditables**: 🔥 incendio, 🔊 ruido excesivo, 🚨 seguridad
+
+> **Gobernanza de IA:** la analítica es estadística (el LLM solo explica, no inventa cifras), las alertas
+> son reglas determinísticas, y cada respuesta es verificable. Ver [ética y gobernanza](docs/etica-y-gobernanza.md).
 
 ---
 
@@ -34,11 +38,13 @@ Un único punto de acceso que:
 |----------------------|------------------------|
 | IA generativa / chat conversacional | Chat 💬 con historial, enruta a 5 agentes especializados |
 | Sistema multi-agente | Agente Clasificador → Especialista (2 llamadas LLM en cadena) |
-| Analítica predictiva avanzada | `tipo=predecir` → 7 valores JSON + línea punteada en Chart.js |
-| Detección de anomalías | Agente Clasificador detecta contexto de riesgo; umbrales en alertas |
+| Analítica predictiva avanzada | Regresión lineal + intervalo de confianza + backtesting (MAE/RMSE/MAPE) en `src/Analitica.php` — el LLM solo narra |
+| Detección de anomalías | Reglas determinísticas auditables (`src/Alertas.php`); umbrales OMS |
 | Modelos de simulación | Agente Simulador responde "¿qué pasaría si…?" |
 | Recomendaciones personalizadas | `tipo=recomendar` → 3 items por municipio y tema |
-| Integración de datos abiertos + IoT | 9 datasets Socrata + dron externo por URL configurable |
+| Trazabilidad / gobernanza de IA | Procedencia (dataset, ID, municipio, registros, fecha) en cada respuesta; ver [ética](docs/etica-y-gobernanza.md) |
+| Visión por computador × datos abiertos | Modelo TSN detecta hurto → cruce con SIEDCO por municipio (`src/CruceHurto.php`) |
+| Integración de datos abiertos + IoT | 11 datasets Socrata + sensor IoT real por API |
 | Arquitectura escalable | N fuentes = N entradas en Config.php; multi-dron por `device_id` |
 
 ---
@@ -82,8 +88,55 @@ Todos los conjuntos de datos son consultados en tiempo real via **API Socrata SO
 | Fuente | ID | Cobertura |
 |--------|----|-----------|
 | [Hurto a Personas](https://www.datos.gov.co/Seguridad-y-Defensa/HURTO-PERSONAS/4rxi-8m8d/data) | `4rxi-8m8d` | Nacional, hasta 2026 |
+| [Hurto a Comercio](https://www.datos.gov.co/Seguridad-y-Defensa/HURTO-A-COMERCIO/7i2x-h5vp) | `7i2x-h5vp` | Nacional |
+| [Hurto a Residencias](https://www.datos.gov.co/Seguridad-y-Defensa/HURTO-A-RESIDENCIAS/7mn7-vzqp) | `7mn7-vzqp` | Nacional |
 | [Homicidios](https://www.datos.gov.co/Seguridad-y-Defensa/HOMICIDIO/m8fd-ahd9) | `m8fd-ahd9` | Nacional, desde 2003 |
 | [Lesiones Personales](https://www.datos.gov.co/Seguridad-y-Defensa/LESIONES-PERSONALES/jr6v-i33g) | `jr6v-i33g` | Nacional, desde 2003 |
+
+**Total: 11 datasets de datos.gov.co** (4 aire · 1 incendios · 1 clima · 5 seguridad) + sensor IoT real para ruido/aire de campo.
+
+---
+
+## Dataset → problema público → uso → valor
+
+| Dataset | Problema público | Uso en VigIA | Valor generado |
+|---------|------------------|--------------|----------------|
+| Calidad del Aire (CVC/IDEAM) | Ciudadanos no saben si el aire es peligroso | Serie diaria + predicción 7 días + alerta | Prevención de exposición para grupos vulnerables |
+| Incendios CORPOBOYACÁ | Riesgo forestal territorial poco visible | Área afectada por tipo + cruce con sensor | Alerta temprana de quema/incendio |
+| Normales Climatológicas IDEAM | Falta de contexto climático local | Referencia mensual por parámetro | Interpretación estacional de las mediciones |
+| Hurto Personas/Comercio/Residencias SIEDCO | Datos de seguridad difíciles de consultar | Tendencia por municipio + **cruce con visión** | Contexto para prevención y priorización |
+| Homicidios / Lesiones SIEDCO | Panorama de violencia disperso | Serie por municipio + agente Seguridad | Respuestas ciudadanas verificables |
+
+---
+
+## Casos territoriales (impacto medible)
+
+**Caso 1 — Pereira / Dosquebradas (aire).** Problema: PM2.5/PM10 incomprensibles para el ciudadano.
+Solución: VigIA traduce a lenguaje simple, predice 7 días (regresión + backtesting) y alerta.
+Indicadores: nº de días de serie analizados, MAPE de la predicción, tiempo de consulta reducido de minutos a segundos.
+
+**Caso 2 — Bogotá (hurtos).** Problema: SIEDCO difícil de explorar. Solución: el chat responde
+"¿tendencia de hurtos en Bogotá?" con cifras y procedencia; la visión detecta modalidad y la cruza con la estadística.
+Indicadores: nº de eventos cruzados, tendencia 90 días, modalidades cubiertas (personas/comercio/residencias).
+
+**Caso 3 — Boyacá (incendios).** Problema: riesgo forestal territorial. Solución: incendios históricos
+CORPOBOYACÁ + sensor de campo. Indicadores: hectáreas por tipo, municipios cubiertos.
+
+---
+
+## Modo jurado: evalúa VigIA en 5 minutos
+
+En el dashboard, botón **🧑‍⚖️ Modo jurado** (guía interactiva que ejecuta cada paso). Manualmente:
+
+1. Tema **Aire** → municipio **Pereira** → *Aplicar*.
+2. Observa la **procedencia** (dataset, ID, registros, última fecha) bajo la interpretación.
+3. Revisa la **predicción 7 días**: línea punteada + banda de confianza + **métricas R²/MAE/RMSE/MAPE**.
+4. Pregunta al chat: *"¿Cómo está el aire en Pereira?"*
+5. Cambia a **Seguridad** → pregunta *"¿tendencia de hurtos en Bogotá?"*.
+6. Mira el panel **Seguridad en Tiempo Real**: evento de visión + **cruce con SIEDCO**.
+7. Abre el **Modelo de Visión** (detección de eventos en video).
+
+> La predicción y las alertas funcionan **aunque no haya API key de LLM** (la analítica es estadística).
 
 ---
 
@@ -282,6 +335,20 @@ Hacer clic en **💬** (esquina inferior derecha). Preguntas de ejemplo:
 - **Predicción proactiva**: anticipa situaciones de riesgo ambiental con 7 días de horizonte
 - **Escalabilidad**: añadir un nuevo dataset requiere solo una entrada en `src/Config.php`; la arquitectura soporta N fuentes sin cambiar el frontend
 - **Replicabilidad**: cualquier municipio puede conectar su propio dron o sensor IoT configurando la URL en la interfaz
+
+### Indicadores de impacto (medibles)
+
+| Indicador | Cómo se mide | Estado |
+|-----------|--------------|--------|
+| Datasets abiertos integrados | Entradas en `Config::DATASETS` | **11** |
+| Municipios soportados | Filtro por municipio en cada fuente | Nacional (según cobertura del dataset) |
+| Tiempo de consulta ciudadana | Antes (explorar Socrata) vs. después (1 clic) | de minutos a **segundos** |
+| Calidad de la predicción | MAPE del backtesting a 7 días | reportado en cada predicción |
+| Modalidades de hurto cruzadas visión×SIEDCO | Personas, comercio, residencias | **3** |
+| Independencia del LLM | Predicción/alertas funcionan sin API key | ✅ analítica determinística |
+
+> **Madurez del hardware:** el sensor IoT (ESP8266 + MQ2) es un **piloto real desplegado** que envía
+> mediciones de campo por API; la arquitectura acepta cualquier dron/sensor vía endpoint JSON configurable.
 
 ---
 

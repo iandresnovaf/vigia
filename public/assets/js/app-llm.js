@@ -118,27 +118,63 @@
          .always(function () { $('#btn-llm-save').prop('disabled', false).text('Guardar'); });
     }
 
+    /* ── Línea de procedencia (trazabilidad) ── */
+    function procedenciaHtml(p) {
+        if (!p) return '';
+        const esc = s => $('<span>').text(s == null ? '' : String(s)).html();
+        const bits = [];
+        if (p.fuente)        bits.push('📊 ' + esc(p.fuente));
+        if (p.dataset_id)    bits.push('ID <code>' + esc(p.dataset_id) + '</code>');
+        if (p.municipio)     bits.push('📍 ' + esc(p.municipio));
+        if (p.registros)     bits.push(esc(p.registros) + ' registros');
+        if (p.ultima_fecha)  bits.push('última fecha ' + esc(p.ultima_fecha));
+        if (p.consultado_en) bits.push('consultado ' + esc(p.consultado_en));
+        return '<div class="proc-line">' + bits.join(' · ') +
+               ' <span class="ia-badge">IA de apoyo — verificable</span></div>';
+    }
+
     /* ── Interpretar datos (llamado desde app.js) ── */
-    window.interpretarDatos = function (rows, tema) {
-        if (!llmCfg.has_key) return;
+    window.interpretarDatos = function (rows, tema, meta) {
+        meta = meta || {};
         const municipio = $('#municipio').val() || '';
         const $panel    = $('#llm-interpretation');
-        $panel.show().find('.llm-texto').html('<em>Analizando con IA…</em>');
-        $panel.find('.llm-pred').remove();
+        const base      = { tema, municipio, dataset_id: meta.dataset_id, fuente: meta.fuente, registros: meta.registros };
 
-        // Llamada 1: Interpretación principal
+        $panel.find('.llm-pred, .proc-line').remove();
+
+        // Predicción: analítica ESTADÍSTICA (no requiere API key).
+        if (rows.length >= 5) {
+            $.ajax({
+                url: 'api/llm.php', method: 'POST', contentType: 'application/json',
+                data: JSON.stringify(Object.assign({ tipo: 'predecir', datos: rows.slice(0, 180) }, base)),
+            }).done(function (res) {
+                if (!res.ok || res.suficiente === false || !res.prediccion_7dias || !res.prediccion_7dias.length) return;
+                if (typeof window.mostrarPrediccion === 'function') {
+                    window.mostrarPrediccion(res.prediccion_7dias, res.intervalo_confianza);
+                }
+                $panel.show();
+                renderPrediccion($panel, res);
+            });
+        }
+
+        if (!llmCfg.has_key) return; // interpretación y recomendaciones sí requieren LLM
+        $panel.show().find('.llm-texto').html('<em>Analizando con IA…</em>');
+
+        // Interpretación principal
         $.ajax({
             url: 'api/llm.php', method: 'POST', contentType: 'application/json',
-            data: JSON.stringify({ tipo: 'interpretar', tema, datos: rows }),
+            data: JSON.stringify(Object.assign({ tipo: 'interpretar', datos: rows.slice(0, 20) }, base)),
         }).done(function (res) {
             $panel.find('.llm-texto').text(res.ok ? res.respuesta : '⚠️ ' + (res.error || 'Error'));
+            $panel.find('.proc-line').remove();
+            if (res.ok && res.procedencia) $panel.append(procedenciaHtml(res.procedencia));
         }).fail(function () { $panel.hide(); });
 
-        // Llamada 2: Recomendaciones personalizadas
+        // Recomendaciones personalizadas
         const $reco = $('#llm-recommendations').hide().empty();
         $.ajax({
             url: 'api/llm.php', method: 'POST', contentType: 'application/json',
-            data: JSON.stringify({ tipo: 'recomendar', tema, municipio, datos: rows.slice(0, 10) }),
+            data: JSON.stringify(Object.assign({ tipo: 'recomendar', datos: rows.slice(0, 10) }, base)),
         }).done(function (res) {
             if (!res.ok || !res.recomendaciones || !res.recomendaciones.length) return;
             const lugar = municipio || 'tu municipio';
@@ -148,26 +184,32 @@
             });
             $reco.html(html + '</ul>').show();
         });
-
-        // Llamada 3: Predicción de tendencias (solo con historial suficiente)
-        if (rows.length >= 10) {
-            $.ajax({
-                url: 'api/llm.php', method: 'POST', contentType: 'application/json',
-                data: JSON.stringify({ tipo: 'predecir', tema, municipio, datos: rows.slice(0, 20) }),
-            }).done(function (res) {
-                if (!res.ok || !res.prediccion_7dias || !res.prediccion_7dias.length) return;
-                if (typeof window.mostrarPrediccion === 'function') {
-                    window.mostrarPrediccion(res.prediccion_7dias);
-                }
-                const iconos = { alta: '🟢', media: '🟡', baja: '🔴' };
-                const icono  = iconos[res.confianza] || '';
-                const tendencia = { alza: '📈 al alza', baja: '📉 a la baja', estable: '➡️ estable' }[res.tendencia] || res.tendencia;
-                const texto = icono + ' Tendencia ' + tendencia + (res.narrativa ? ' — ' + res.narrativa : '');
-                $panel.find('.llm-pred').remove();
-                $panel.append($('<p class="llm-pred">').text(texto));
-            });
-        }
     };
+
+    /* ── Render del panel de predicción con métricas ── */
+    function renderPrediccion($panel, res) {
+        $panel.find('.llm-pred').remove();
+        const iconos = { alta: '🟢', media: '🟡', baja: '🔴' };
+        const icono  = iconos[res.confianza] || '';
+        const tendencia = { alza: '📈 al alza', baja: '📉 a la baja', estable: '➡️ estable' }[res.tendencia] || res.tendencia;
+        const m = res.metricas || {};
+        const esc = s => $('<span>').text(s == null ? '' : String(s)).html();
+
+        let html = '<div class="llm-pred">';
+        html += '<div class="pred-title">' + icono + ' Predicción 7 días — tendencia ' + esc(tendencia) +
+                ' · confianza ' + esc(res.confianza) + '</div>';
+        if (res.narrativa) html += '<div class="pred-narr">' + esc(res.narrativa) + '</div>';
+        html += '<div class="pred-metrics" title="Backtesting sobre datos oficiales — analítica estadística, no generada por IA">' +
+                'método: <strong>' + esc(res.metodo || 'regresión lineal') + '</strong>';
+        if (m.r2   != null) html += ' · R²: <strong>' + esc(m.r2) + '</strong>';
+        if (m.mae  != null) html += ' · MAE: <strong>' + esc(m.mae) + '</strong>';
+        if (m.rmse != null) html += ' · RMSE: <strong>' + esc(m.rmse) + '</strong>';
+        if (m.mape != null) html += ' · MAPE: <strong>' + esc(m.mape) + '%</strong>';
+        html += '</div>';
+        if (res.procedencia) html += procedenciaHtml(res.procedencia);
+        html += '</div>';
+        $panel.append(html);
+    }
 
     /* ── Alertas en tiempo real del dron ── */
     function checkAlerts() {

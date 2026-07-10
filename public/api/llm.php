@@ -3,6 +3,31 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../src/Config.php';
 require_once __DIR__ . '/../../src/Db.php';
+require_once __DIR__ . '/../../src/Analitica.php';
+require_once __DIR__ . '/../../src/Alertas.php';
+
+/**
+ * Construye el objeto de procedencia (trazabilidad) a partir de los datos consultados.
+ * @return array{fuente:string, dataset_id:string, municipio:string, registros:int,
+ *               ultima_fecha:string, consultado_en:string}
+ */
+function procedencia(array $body, array $datos): array
+{
+    $ultima = '';
+    foreach ($datos as $r) {
+        foreach (['fecha', 'fecha_hecho', 'captured_at', 'fecha_lectura', 'med_fecha_inicio'] as $cf) {
+            if (!empty($r[$cf])) { $f = substr((string) $r[$cf], 0, 10); if ($f > $ultima) $ultima = $f; break; }
+        }
+    }
+    return [
+        'fuente'        => substr(strip_tags((string) ($body['fuente'] ?? '')), 0, 120),
+        'dataset_id'    => preg_replace('/[^a-z0-9\-]/i', '', (string) ($body['dataset_id'] ?? '')),
+        'municipio'     => substr(strip_tags((string) ($body['municipio'] ?? '')), 0, 100),
+        'registros'     => (int) ($body['registros'] ?? count($datos)),
+        'ultima_fecha'  => $ultima,
+        'consultado_en' => date('Y-m-d H:i'),
+    ];
+}
 
 function llmConfig(PDO $pdo): array
 {
@@ -131,7 +156,16 @@ try {
     $pdo = Db::conn();
     $cfg = llmConfig($pdo);
 
-    if (empty($cfg['api_key'])) {
+    $body   = json_decode(file_get_contents('php://input'), true) ?? [];
+    $tipo   = $body['tipo'] ?? 'interpretar';
+    $tema   = preg_replace('/[^a-z]/', '', (string) ($body['tema'] ?? 'aire'));
+    $datos  = array_slice((array) ($body['datos'] ?? []), 0, 20);
+    $hasKey = !empty($cfg['api_key']);
+    $url    = $hasKey ? apiUrl($cfg['provider'], $cfg['api_url']) : '';
+
+    // predecir y alertar NO dependen del LLM: la analítica es determinística.
+    // interpretar/recomendar sí requieren API key.
+    if (!$hasKey && !in_array($tipo, ['predecir', 'alertar'], true)) {
         echo json_encode([
             'ok'    => false,
             'error' => 'LLM sin configurar. Haz clic en ⚙️ Asistente IA para agregar tu API key.',
@@ -139,48 +173,78 @@ try {
         exit;
     }
 
-    $body  = json_decode(file_get_contents('php://input'), true) ?? [];
-    $tipo  = $body['tipo'] ?? 'interpretar';
-    $tema  = preg_replace('/[^a-z]/', '', (string) ($body['tema'] ?? 'aire'));
-    $datos = array_slice((array) ($body['datos'] ?? []), 0, 20);
-    $url   = apiUrl($cfg['provider'], $cfg['api_url']);
-
     if ($tipo === 'alertar') {
-        $system = 'Eres un sistema de alerta temprana para Colombia. Analizas datos de sensores de un dron de monitoreo ambiental y de seguridad. Responde ÚNICAMENTE con JSON válido, sin texto ni markdown adicional.';
-        $user   = 'Lectura más reciente del dron: ' . json_encode($datos, JSON_UNESCAPED_UNICODE) .
-                  "\n\nUmbrales: PM2.5 > 150 µg/m³ = posible incendio; PM10 > 200 µg/m³ = posible incendio; " .
-                  "ruido_db > 85 dB = exceso de ruido; tipo_comportamiento sospechoso = alerta de seguridad." .
-                  "\n\nResponde con este JSON exacto: {\"alerta\":true|false,\"tipo\":\"incendio|ruido|seguridad|ninguna\",\"mensaje\":\"descripción breve\"}";
-        $texto  = dispatchLLM($cfg, $url, $system, $user);
-        $parsed = json_decode($texto, true);
-        echo json_encode([
-            'ok'     => true,
-            'tipo'   => 'alertar',
-            'alerta' => $parsed ?? ['alerta' => false, 'tipo' => 'ninguna', 'mensaje' => $texto],
-        ], JSON_UNESCAPED_UNICODE);
+        // Decisión por regla determinística (auditable); el LLM solo redacta el mensaje.
+        $lectura = $datos[count($datos) - 1] ?? [];
+        $ev      = Alertas::evaluar($lectura);
+        if ($ev['alerta']) {
+            $mensaje = "Se superó el umbral de {$ev['parametro']}: {$ev['valor']} (límite {$ev['umbral']}).";
+            if ($hasKey) {
+                try {
+                    $system = 'Eres un sistema de alerta temprana para Colombia. Redacta en 1 frase clara y ' .
+                              'sin tecnicismos una alerta ciudadana. Responde solo el texto, sin markdown.';
+                    $user   = "Alerta de tipo {$ev['tipo']}: {$ev['parametro']}={$ev['valor']} superó el umbral {$ev['umbral']}. " .
+                              'Explica el riesgo y una acción preventiva.';
+                    $mensaje = dispatchLLM($cfg, $url, $system, $user);
+                } catch (Throwable) { /* se mantiene el mensaje por plantilla */ }
+            }
+            $ev['mensaje'] = $mensaje;
+        } else {
+            $ev['mensaje'] = 'Sin alertas: los parámetros están dentro de rangos seguros.';
+        }
+        echo json_encode(['ok' => true, 'tipo' => 'alertar', 'alerta' => $ev], JSON_UNESCAPED_UNICODE);
     } elseif ($tipo === 'predecir') {
         $municipio = substr(strip_tags((string)($body['municipio'] ?? '')), 0, 100);
-        $system = 'Eres el Agente Predictor de VigIA. Analiza la tendencia histórica de ' . temaCtx($tema) .
-                  ' en Colombia y predice los próximos 7 días. ' .
-                  'Responde ÚNICAMENTE con JSON válido, sin texto adicional: ' .
-                  '{"tendencia":"alza|baja|estable","prediccion_7dias":[v0,v1,v2,v3,v4,v5,v6],' .
-                  '"confianza":"alta|media|baja","narrativa":"texto en español de 2 oraciones"}';
-        $user   = "Municipio: $municipio\nDatos históricos recientes: " . json_encode($datos, JSON_UNESCAPED_UNICODE);
-        $texto  = dispatchLLM($cfg, $url, $system, $user);
-        $parsed = json_decode($texto, true);
+        // Analítica determinística sobre más historial (no solo 20 filas).
+        $historial = array_slice((array) ($body['datos'] ?? []), 0, 180);
+        $serie     = Analitica::serieDiaria($historial);
+
+        if (count($serie) < 5) {
+            echo json_encode([
+                'ok'    => true, 'tipo' => 'predecir', 'suficiente' => false,
+                'error' => 'Datos insuficientes para una predicción estadística (se requieren ≥5 días).',
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $pron = Analitica::pronostico($serie, 7);
+        $bt   = Analitica::backtest($serie, 7);
+        $conf = Analitica::nivelConfianza($pron['r2'], $bt['mape']);
+
+        // El LLM SOLO narra los resultados ya calculados; no genera cifras.
+        $narrativa = 'Proyección por regresión lineal sobre ' . count($serie) . ' días de datos oficiales.';
+        if ($hasKey) {
+            try {
+                $system = 'Eres el Agente Predictor de VigIA. Te doy una predicción YA CALCULADA por un ' .
+                          'modelo estadístico (regresión lineal). NO inventes ni cambies cifras: solo explícalas ' .
+                          'a un ciudadano en 2 oraciones, en español, mencionando la tendencia y el nivel de confianza.';
+                $user   = "Tema: " . temaCtx($tema) . "\nMunicipio: $municipio\n" .
+                          "Tendencia: {$pron['tendencia']}\nPredicción 7 días: " . json_encode($pron['valores']) .
+                          "\nR²: {$pron['r2']} · MAPE: " . ($bt['mape'] ?? 'n/d') . "% · confianza: $conf";
+                $narrativa = dispatchLLM($cfg, $url, $system, $user);
+            } catch (Throwable) { /* se mantiene la narrativa por plantilla */ }
+        }
+
         echo json_encode([
             'ok'               => true,
             'tipo'             => 'predecir',
-            'tendencia'        => $parsed['tendencia']        ?? 'estable',
-            'prediccion_7dias' => array_map('floatval', $parsed['prediccion_7dias'] ?? []),
-            'confianza'        => $parsed['confianza']        ?? 'media',
-            'narrativa'        => $parsed['narrativa']        ?? $texto,
+            'suficiente'       => true,
+            'metodo'           => 'regresion_lineal',
+            'tendencia'        => $pron['tendencia'],
+            'prediccion_7dias' => $pron['valores'],
+            'intervalo_confianza' => $pron['intervalo'],
+            'confianza'        => $conf,
+            'metricas'         => ['mae' => $bt['mae'], 'rmse' => $bt['rmse'], 'mape' => $bt['mape'], 'r2' => $pron['r2']],
+            'dias_datos'       => count($serie),
+            'narrativa'        => $narrativa,
+            'procedencia'      => procedencia($body, $historial),
         ], JSON_UNESCAPED_UNICODE);
     } elseif ($tipo === 'recomendar') {
         $municipio = substr(strip_tags((string)($body['municipio'] ?? '')), 0, 100);
         $system = 'Eres el Agente Recomendador de VigIA. Genera 3 recomendaciones concretas y prácticas para ' .
-                  "ciudadanos de $municipio, Colombia, basadas en datos actuales de " . temaCtx($tema) . '. ' .
+                  "ciudadanos de $municipio, Colombia, basadas ÚNICAMENTE en los datos actuales de " . temaCtx($tema) . '. ' .
                   'Considera grupos vulnerables (niños, adultos mayores) y el contexto colombiano. ' .
+                  'No inventes cifras que no estén en los datos. ' .
                   'Responde ÚNICAMENTE con JSON válido: {"recomendaciones":["rec1","rec2","rec3"]}';
         $user   = "Municipio: $municipio\nDatos actuales: " . json_encode($datos, JSON_UNESCAPED_UNICODE);
         $texto  = dispatchLLM($cfg, $url, $system, $user);
@@ -193,13 +257,19 @@ try {
             'ok'              => true,
             'tipo'            => 'recomendar',
             'recomendaciones' => array_values(array_slice($recos, 0, 3)),
+            'procedencia'     => procedencia($body, $datos),
         ], JSON_UNESCAPED_UNICODE);
     } else {
-        $system = 'Eres un asistente amigable para ciudadanos colombianos. Analizas datos ambientales y de seguridad de Colombia y los explicas con claridad, sin tecnicismos. Responde siempre en español, máximo 3 oraciones, destacando tendencias o situaciones relevantes.';
+        $system = 'Eres un asistente amigable para ciudadanos colombianos. Analizas datos ambientales y de seguridad de Colombia y los explicas con claridad, sin tecnicismos. Responde siempre en español, máximo 3 oraciones. Básate SOLO en los datos entregados; si son insuficientes, dilo; nunca inventes cifras.';
         $user   = 'Analiza estos datos de ' . temaCtx($tema) . ' y explícalos a un ciudadano común: ' .
                   json_encode($datos, JSON_UNESCAPED_UNICODE);
         $texto  = dispatchLLM($cfg, $url, $system, $user);
-        echo json_encode(['ok' => true, 'tipo' => 'interpretar', 'respuesta' => $texto], JSON_UNESCAPED_UNICODE);
+        echo json_encode([
+            'ok'          => true,
+            'tipo'        => 'interpretar',
+            'respuesta'   => $texto,
+            'procedencia' => procedencia($body, $datos),
+        ], JSON_UNESCAPED_UNICODE);
     }
 } catch (Throwable $e) {
     echo json_encode(['ok' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);

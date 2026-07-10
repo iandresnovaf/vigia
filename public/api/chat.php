@@ -139,6 +139,7 @@ try {
     // Paso 2 — Fetch datos si el agente los necesita
     $datosCtx    = '';
     $datosUsados = 0;
+    $procedencia = null;
     if ($necesita && isset(Config::DATASETS[$dominio])) {
         try {
             $dbTok = Db::conn()->query("SELECT cfg_val FROM llm_config WHERE cfg_key='socrata_token'")->fetchColumn();
@@ -156,6 +157,15 @@ try {
                 if ($datosUsados > 0) {
                     $datosCtx = "\n\nDatos recientes ($datosUsados registros): " .
                                 json_encode(array_slice($filas, 0, 15), JSON_UNESCAPED_UNICODE);
+                    $ultima = substr((string)($filas[0][$src['campo_fecha']] ?? ''), 0, 10);
+                    $procedencia = [
+                        'fuente'        => $src['label'] ?? '',
+                        'dataset_id'    => $src['id'] ?? '',
+                        'municipio'     => $municipio,
+                        'registros'     => $datosUsados,
+                        'ultima_fecha'  => $ultima,
+                        'consultado_en' => date('Y-m-d H:i'),
+                    ];
                 }
             }
         } catch (Throwable) {}
@@ -211,6 +221,7 @@ try {
         'agente'       => AGENTES[$dominio] ?? 'Agente VigIA',
         'datos_usados' => $datosUsados,
         'dominio'      => $dominio,
+        'procedencia'  => $procedencia,
     ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     echo json_encode(['ok' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);

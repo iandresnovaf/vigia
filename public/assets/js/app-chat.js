@@ -17,7 +17,7 @@
         return $('<span>').text(str).html();
     }
 
-    function appendMsg(content, role, agente) {
+    function appendMsg(content, role, agente, procedencia) {
         const $msgs = $('#chat-messages');
         if (role === 'user') {
             $msgs.append($('<div class="msg-user">').text(content));
@@ -27,6 +27,15 @@
                 $wrap.append($('<div class="msg-agent">').text(agente));
             }
             $wrap.append($('<div class="msg-bot">').text(content));
+            if (procedencia && (procedencia.dataset_id || procedencia.fuente)) {
+                const p = procedencia;
+                const bits = [];
+                if (p.fuente)       bits.push('📊 ' + escHtml(p.fuente));
+                if (p.dataset_id)   bits.push('ID ' + escHtml(p.dataset_id));
+                if (p.registros)    bits.push(escHtml(p.registros) + ' reg.');
+                if (p.ultima_fecha) bits.push('últ. ' + escHtml(p.ultima_fecha));
+                $wrap.append($('<div class="msg-proc">').html(bits.join(' · ')));
+            }
             $msgs.append($wrap);
         }
         $msgs.scrollTop($msgs[0].scrollHeight);
@@ -62,7 +71,7 @@
         }).done(function (res) {
             $thinking.remove();
             if (res.ok) {
-                appendMsg(res.respuesta, 'bot', res.agente);
+                appendMsg(res.respuesta, 'bot', res.agente, res.procedencia);
                 history.push({ role: 'assistant', content: res.respuesta });
                 if (history.length > MAX_HISTORY) history = history.slice(-MAX_HISTORY);
             } else {

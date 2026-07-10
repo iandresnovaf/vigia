@@ -223,16 +223,34 @@ Respuesta esperada: {"alerta":true|false,"tipo":"incendio|ruido|seguridad|ningun
 ```
 Polling cada 60 segundos desde `app-llm.js`. Toast UI con 🔥 🔊 🚨 según el tipo.
 
-#### tipo=predecir — Analítica predictiva (7 días)
+#### tipo=predecir — Analítica predictiva ESTADÍSTICA (7 días)
+
+La predicción **no la genera el LLM**: se calcula en `src/Analitica.php` de forma determinística y reproducible.
+
+1. `serieDiaria()` agrega los datos oficiales en una serie diaria numérica (con filtro de outliers).
+2. `regresionLineal()` ajusta por mínimos cuadrados → `slope`, `intercept`, **R²**.
+3. `pronostico()` extrapola 7 días y calcula la **banda de confianza** (±1.96·σ de los residuos).
+4. `backtest()` reserva las últimas 7 observaciones, pronostica ese tramo y calcula **MAE, RMSE y MAPE**.
+
+El LLM (Agente Predictor) **solo narra** los números ya calculados; se le instruye explícitamente
+"NO inventes ni cambies cifras". Respuesta:
 ```
-Sistema: Eres el Agente Predictor de VigIA. Analiza la tendencia histórica y predice
-los próximos 7 días con nivel de confianza. Responde SOLO JSON:
-{"tendencia":"alza|baja|estable",
- "prediccion_7dias":[v0,v1,v2,v3,v4,v5,v6],
+{"metodo":"regresion_lineal",
+ "tendencia":"alza|baja|estable",
+ "prediccion_7dias":[...7 valores calculados...],
+ "intervalo_confianza":{"low":[...],"high":[...]},
  "confianza":"alta|media|baja",
- "narrativa":"texto en español de 2 oraciones"}
+ "metricas":{"mae":..,"rmse":..,"mape":..,"r2":..},
+ "narrativa":"explicación del LLM (opcional)",
+ "procedencia":{dataset, id, municipio, registros, ultima_fecha}}
 ```
-Los 7 valores se inyectan en el chart.js existente como dataset adicional con `borderDash:[5,5]` (línea punteada naranja). Se activa automáticamente si el municipio tiene ≥ 10 registros.
+Los 7 valores + la banda se dibujan en el chart (`borderDash:[5,5]` + relleno). **Funciona sin API key**
+(narrativa por plantilla). Se activa con ≥ 5 días de serie.
+
+#### tipo=alertar — Reglas determinísticas (no LLM)
+La decisión de alerta la toma `src/Alertas.php` con umbrales auditables (PM2.5>150, PM10>200, ruido>85 dB OMS).
+El LLM solo redacta el mensaje ciudadano de una alerta ya disparada. Respuesta incluye
+`{valor, umbral, parametro, metodo:"regla_deterministica"}`.
 
 #### tipo=recomendar — Recomendaciones personalizadas
 ```
@@ -299,13 +317,24 @@ Evaluado con 5 dominios distintos (Kimi K2 como proveedor de prueba):
 | "¿Qué pasaría si queman más caña?" | Simulador | ✅ Clasificó `dominio=simulacion` |
 | "¿Qué es VigIA?" | VigIA | ✅ Clasificó `dominio=general`, `necesita_datos=false` |
 
-### Predicción de tendencias
+### Predicción de tendencias — validación estadística (backtesting)
 
-El Agente Predictor devuelve un JSON estructurado. Validación:
-- Respuesta contiene exactamente 7 valores numéricos en `prediccion_7dias` ✅
-- `tendencia` es uno de `alza|baja|estable` ✅
-- `narrativa` en español, coherente con la tendencia ✅
-- Línea punteada aparece en el chart al recibir la respuesta ✅
+La predicción se valida con **backtesting**: se reservan las últimas 7 observaciones, se pronostican y
+se comparan con lo real. Métricas reportadas en cada respuesta (`src/Analitica.php::backtest`):
+
+| Métrica | Significado |
+|---------|-------------|
+| **MAE** | Error absoluto medio (unidades del parámetro) |
+| **RMSE** | Raíz del error cuadrático medio (penaliza errores grandes) |
+| **MAPE** | Error porcentual absoluto medio (%) — comparable entre municipios |
+| **R²** | Bondad de ajuste de la regresión lineal |
+
+Pruebas realizadas:
+- Serie sintética perfectamente lineal → `prediccion_7dias` exacta, R²=1, MAE=RMSE=MAPE=0 ✅
+- Serie con ruido → banda de confianza se ensancha, MAPE≈11.6%, R²≈0.80 ✅
+- Datos reales Pereira (PM, 170 días) → tendencia "estable", MAPE≈9.3%, R²≈0.00 (serie plana) ✅
+- La predicción y las alertas **funcionan sin API key** (analítica determinística) ✅
+- Banda de confianza (95%) + línea punteada aparecen en el chart ✅
 
 ### Datasets descartados (y razón)
 
