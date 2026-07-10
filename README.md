@@ -5,6 +5,8 @@
 **Concurso Datos al Ecosistema 2026 · IA para Colombia**  
 Categorías: **Sostenibilidad y Medio Ambiente** · **Innovación Social (Seguridad Ciudadana)**
 
+**Equipo 80** — Mariana Martinez · Nestor Santos · Andres Nova
+
 ---
 
 ## ¿Qué es VigIA?
