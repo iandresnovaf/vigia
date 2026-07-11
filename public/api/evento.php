@@ -95,16 +95,20 @@ try {
 
     // GET → últimos eventos con su cruce (leído del ai_result_json guardado).
     $limit   = min(max((int) ($_GET['limit'] ?? 20), 1), 100);
-    $eventos = $repo->eventos($limit);
+    $eventos = $repo->eventos($limit); // [] si la tabla aún no existe
 
     // Reconstruye el cruce desde el JSON almacenado (sin re-consultar SIEDCO en cada poll).
-    $pdo = Db::conn();
-    $st  = $pdo->prepare("SELECT id, ai_result_json FROM dron_eventos_seguridad ORDER BY captured_at DESC LIMIT " . (int) $limit);
-    $st->execute();
     $jsonById = [];
-    foreach ($st->fetchAll() as $r) {
-        $j = json_decode((string) ($r['ai_result_json'] ?? ''), true);
-        $jsonById[$r['id']] = is_array($j) ? $j : [];
+    if ($eventos) {
+        try {
+            $pdo = Db::conn();
+            $st  = $pdo->prepare("SELECT id, ai_result_json FROM dron_eventos_seguridad ORDER BY captured_at DESC LIMIT " . (int) $limit);
+            $st->execute();
+            foreach ($st->fetchAll() as $r) {
+                $j = json_decode((string) ($r['ai_result_json'] ?? ''), true);
+                $jsonById[$r['id']] = is_array($j) ? $j : [];
+            }
+        } catch (PDOException) { /* tabla ausente: sin cruce reconstruido */ }
     }
     foreach ($eventos as &$ev) {
         $j = $jsonById[$ev['id']] ?? [];

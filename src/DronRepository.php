@@ -77,14 +77,18 @@ class DronRepository
         return $st->fetchAll();
     }
 
-    /** Últimos eventos de seguridad. */
+    /** Últimos eventos de seguridad. Devuelve [] si la tabla aún no existe (degradación elegante). */
     public function eventos(int $limit = 200): array
     {
         $sql = "SELECT id, captured_at, municipio, cod_muni, lat, lng,
                        tipo_comportamiento, nivel_alerta, confianza, media_url
                 FROM dron_eventos_seguridad
                 ORDER BY captured_at DESC LIMIT " . (int) $limit;
-        return $this->db->query($sql)->fetchAll();
+        try {
+            return $this->db->query($sql)->fetchAll();
+        } catch (PDOException) {
+            return []; // tabla dron_eventos_seguridad ausente en esta instalación
+        }
     }
 
     /** Serie diaria del dron para comparación: promedio de una columna o conteo de eventos. */
@@ -94,7 +98,11 @@ class DronRepository
             $sql = "SELECT DATE(captured_at) AS dia, COUNT(*) AS valor
                     FROM dron_eventos_seguridad
                     GROUP BY DATE(captured_at) ORDER BY dia ASC";
-            return $this->db->query($sql)->fetchAll();
+            try {
+                return $this->db->query($sql)->fetchAll();
+            } catch (PDOException) {
+                return []; // tabla ausente → sin serie de eventos
+            }
         }
         // whitelist de columnas permitidas
         $cols = ['pm25', 'pm10', 'no2', 'o3', 'ruido_db'];

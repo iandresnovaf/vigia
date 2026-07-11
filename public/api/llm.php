@@ -52,7 +52,7 @@ function apiUrl(string $provider, string $customUrl): string
         'gemini'     => 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
         'claude'     => '', // Anthropic usa callAnthropic(), esta URL no se usa
         'custom'     => $customUrl,
-        default      => 'https://api.moonshot.cn/v1/chat/completions',
+        default      => 'https://api.moonshot.ai/v1/chat/completions',
     };
 }
 

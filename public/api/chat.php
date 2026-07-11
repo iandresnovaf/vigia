@@ -46,7 +46,7 @@ function chatCall(array $cfg, string $system, string $user, int $maxTokens = 500
         'openrouter' => 'https://openrouter.ai/api/v1/chat/completions',
         'gemini'     => 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
         'custom'     => $cfg['api_url'],
-        default      => 'https://api.moonshot.cn/v1/chat/completions',
+        default      => 'https://api.moonshot.ai/v1/chat/completions',
     };
     $payload = json_encode([
         'model' => $cfg['model'], 'max_tokens' => $maxTokens, 'temperature' => 0.5,
