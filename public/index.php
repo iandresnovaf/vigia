@@ -90,6 +90,11 @@ $videosRobbery = array_map(fn($f) => [
         <!-- Tab: Asistente IA -->
         <div id="cfg-tab-llm">
             <div class="llm-modal-body">
+                <div class="llm-help">
+                    💡 <strong>¿Sin costo?</strong> Usa <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a>
+                    (modelos <code>:free</code>) o <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google Gemini</a> (free tier).
+                    <br><span class="llm-help-note">Las suscripciones <strong>ChatGPT Plus / Claude Pro no dan acceso por API</strong>: cada proveedor requiere su propia API key.</span>
+                </div>
                 <label class="llm-label">Proveedor LLM
                     <select id="llm-provider">
                         <option value="kimi">Kimi / Moonshot AI</option>
@@ -117,6 +122,7 @@ $videosRobbery = array_map(fn($f) => [
                         <input type="url" id="llm-url" placeholder="https://api.example.com/v1/chat/completions">
                     </label>
                 </div>
+                <p id="llm-provider-hint" class="llm-hint"></p>
                 <p class="llm-hint">La API key se guarda en la base de datos local. Nunca sale del servidor.</p>
             </div>
             <div class="llm-modal-footer">

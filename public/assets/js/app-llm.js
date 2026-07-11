@@ -77,6 +77,15 @@
         if (llmCfg.api_url) $('#llm-url').val(llmCfg.api_url);
     }
 
+    const PROVIDER_HINTS = {
+        kimi:       'Consigue tu key en <a href="https://platform.kimi.ai/console/api-keys" target="_blank" rel="noopener">platform.kimi.ai</a> (endpoint global api.moonshot.ai).',
+        openrouter: '★ <strong>Recomendado gratis:</strong> crea tu key en <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a> y elige un modelo <code>:free</code>.',
+        gemini:     'Gratis: obtén tu key en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> (free tier).',
+        openai:     'Requiere API key de <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a> (de pago). ⚠️ ChatGPT Plus NO da acceso por API.',
+        claude:     'Requiere API key de <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (de pago). ⚠️ Claude Pro NO da acceso por API.',
+        custom:     'Cualquier endpoint compatible con OpenAI: indica la URL y el ID del modelo.',
+    };
+
     function updateModelOptions(provider) {
         const p    = PROVIDERS[provider] || PROVIDERS.kimi;
         const $sel = $('#llm-model');
@@ -85,6 +94,7 @@
         $sel.append($('<option>').val('__custom__').text('Personalizado…'));
         $('#llm-model-custom-wrap').hide();
         $('#llm-url-wrap').toggle(!!p.showUrl);
+        $('#llm-provider-hint').html(PROVIDER_HINTS[provider] || '');
     }
 
     /* ── Guardar configuración ── */

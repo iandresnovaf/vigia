@@ -139,6 +139,15 @@ body {
 }
 .llm-key-status { font-size: .78rem; color: #27ae60; font-weight: 500; }
 .llm-hint { font-size: .76rem; color: #888; margin: 0; }
+.llm-help {
+    background: #f0faf6; border: 1px solid rgba(29,184,127,.3); border-radius: 8px;
+    padding: .6rem .75rem; font-size: .8rem; line-height: 1.5; color: var(--texto);
+}
+.llm-help a { color: var(--verde2); font-weight: 600; }
+.llm-help code { background: rgba(0,0,0,.06); padding: .02rem .28rem; border-radius: 3px; }
+.llm-help-note { font-size: .74rem; color: #7b8794; }
+#llm-provider-hint { color: var(--verde2); }
+#llm-provider-hint a { color: var(--verde2); font-weight: 600; }
 .llm-modal-footer {
     display: flex; gap: .6rem; justify-content: flex-end;
     padding: .85rem 1.2rem; border-top: 1px solid var(--borde);
