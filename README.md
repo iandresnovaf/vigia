@@ -317,6 +317,8 @@ En el dashboard, botón **🧑‍⚖️ Modo jurado** (guía interactiva que eje
 
 ## Cómo ejecutar
 
+> Para publicar en un **hosting** (cPanel/phpMyAdmin), ver la [guía de despliegue](docs/despliegue.md).
+
 ### Requisitos
 - PHP 8.2+ con extensiones: `pdo_mysql`, `curl`, `mbstring`, `openssl`
 - MySQL / MariaDB 11.4+
