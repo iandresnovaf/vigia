@@ -41,3 +41,6 @@ desktop.ini
 # Caché de Python (microservicio de visión)
 __pycache__/
 *.pyc
+
+# Guion del pitch (privado del equipo, no publicar)
+docs/guion-pitch.md
