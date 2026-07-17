@@ -27,6 +27,7 @@ Categorías: **Sostenibilidad y Medio Ambiente** · **Innovación Social (Seguri
 | 🚀 **Demo en vivo** (dashboard) | ⬜ _(pegar URL de la demo pública)_ |
 | 🎥 **Video de presentación** | ⬜ _(pegar URL del video, 2–3 min)_ |
 | 🛰️ **Modelo de visión** (detección de eventos) | [xbmpkywc5iisxlzxmwvfsc.streamlit.app](https://xbmpkywc5iisxlzxmwvfsc.streamlit.app/) |
+| 🧠 **Evidencia de entrenamiento** (log del modelo TSN) | [docs/entrenamiento-modelo-vision.md](docs/entrenamiento-modelo-vision.md) |
 | 📊 **Publicación en datos.gov.co** | [herramientas.datos.gov.co/usos](https://herramientas.datos.gov.co/usos) _(registro en trámite)_ |
 | 💻 **Repositorio** | [github.com/iandresnovaf/vigia](https://github.com/iandresnovaf/vigia) |
 
