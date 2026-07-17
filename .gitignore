@@ -2,6 +2,10 @@
 vendor/
 node_modules/
 
+# Archivos temporales de bloqueo de Office (se crean al abrir un .pptx/.docx)
+~$*.pptx
+~$*.docx
+
 # Configuración con credenciales reales (usar config/config.example.php como base)
 # src/Config.php contiene solo defaults de desarrollo local; no eliminar si no hay secretos
 .env
@@ -44,4 +48,5 @@ __pycache__/
 
 # Guion del pitch (privado del equipo, no publicar)
 docs/guion-pitch.md
+docs/guion-pitch-10min.md
 docs/presentacion/VigIA-Pitch-Equipo80.docx
