@@ -13,6 +13,34 @@
 
 ---
 
+## Capturas del proceso
+
+Capturas reales de la terminal durante la preparación y ejecución del modelo de visión.
+
+### 1. Creación del entorno y dependencias
+
+![Creación del entorno conda mmaction2](img/entrenamiento/image4.png)
+*Creación del entorno conda `mmaction2` (descarga y extracción de paquetes).*
+
+![Entorno mmaction2 listo](img/entrenamiento/image5.png)
+*Entorno `mmaction2` creado y listo para activar.*
+
+![Instalación de PyTorch + CUDA](img/entrenamiento/image1.png)
+*Instalación de PyTorch + CUDA 12.1 (torch / torchvision / torchaudio).*
+
+![PyTorch instalado](img/entrenamiento/image3.png)
+*PyTorch 2.5.1+cu121 instalado correctamente.*
+
+![Instalación de MMCV y MMDetection](img/entrenamiento/image2.png)
+*Instalación de MMCV‑lite y MMDetection (mmdet).*
+
+### 2. Inferencia del modelo TSN
+
+![Inferencia del modelo TSN](img/entrenamiento/image6.png)
+*Inferencia del modelo TSN: carga del checkpoint y salida `rec_scores` del modelo sobre video.*
+
+---
+
 ## Registro completo (log de terminal)
 
 ```text
