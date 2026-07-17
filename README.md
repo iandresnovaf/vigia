@@ -24,7 +24,7 @@ Categorías: **Sostenibilidad y Medio Ambiente** · **Innovación Social (Seguri
 
 | Entregable | Enlace |
 |-----------|--------|
-| 🚀 **Demo en vivo** (dashboard) | ⬜ _(pegar URL de la demo pública)_ |
+| 🚀 **Demo en vivo** (dashboard) | [wellnestfamily.com/vigia/proyecto/public](https://wellnestfamily.com/vigia/proyecto/public/) |
 | 🎥 **Video de presentación** | ⬜ _(pegar URL del video, 2–3 min)_ |
 | 🛰️ **Modelo de visión** (detección de eventos) | [xbmpkywc5iisxlzxmwvfsc.streamlit.app](https://xbmpkywc5iisxlzxmwvfsc.streamlit.app/) |
 | 🧠 **Evidencia de entrenamiento** (log del modelo TSN) | [docs/entrenamiento-modelo-vision.md](docs/entrenamiento-modelo-vision.md) |
