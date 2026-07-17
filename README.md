@@ -255,6 +255,9 @@ Metodología completa: [`docs/crisp-ml.md`](docs/crisp-ml.md) (CRISP-ML(Q), 6 fa
   hurto/riesgo en video; [`src/CruceHurto.php`](src/CruceHurto.php) mapea la clase detectada a su
   modalidad SIEDCO (personas / comercio / residencias) y la **cruza con la estadística oficial** del
   municipio. Ingesta por webhook (`api/evento.php`) o microservicio (`ai-service/app.py`).
+- **Evidencia de entrenamiento:** el log real del entorno, instalación e inferencia del modelo TSN está
+  en [`docs/entrenamiento-modelo-vision.md`](docs/entrenamiento-modelo-vision.md) (incluye detecciones
+  sobre videos reales de hurto con el desglose hurto/riesgo/normal y la nota de revisión humana).
 
 ---
 
